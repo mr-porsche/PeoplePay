@@ -1,8 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { getDb, closeDb } from '../src/db/database';
 import { runMigrations } from '../src/db/migrations';
 
-// Using in-memory DB for tests
 process.env.DB_PATH = ':memory:';
 
 describe('Database Migrations', () => {
@@ -12,6 +11,10 @@ describe('Database Migrations', () => {
 
   afterAll(() => {
     closeDb();
+  });
+
+  beforeEach(() => {
+    getDb().exec('DELETE FROM employees');
   });
 
   it('should create the employees table', () => {
