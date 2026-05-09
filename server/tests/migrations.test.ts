@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { getDb, closeDb, resetDb } from '../src/db/database';
 import { runMigrations } from '../src/db/migrations';
 
-process.env.DB_PATH = ':memory:';
+process.env.DB_PATH = './data/test-migrations.db';
 
 describe('Database Migrations', () => {
   beforeAll(() => {

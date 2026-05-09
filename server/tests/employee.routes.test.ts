@@ -4,7 +4,7 @@ import app from '../src/app';
 import { runMigrations } from '../src/db/migrations';
 import { closeDb, getDb, resetDb } from '../src/db/database';
 
-process.env.DB_PATH = ':memory:';
+process.env.DB_PATH = './data/test-employee-routes.db';
 
 const request = supertest(app);
 

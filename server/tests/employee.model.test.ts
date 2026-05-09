@@ -9,7 +9,7 @@ import {
   updateEmployee,
 } from '../src/models/employee.model';
 
-process.env.DB_PATH = ':memory:';
+process.env.DB_PATH = './data/test-employee-model.db';
 
 const sample = {
   full_name:  'Jane Doe',
