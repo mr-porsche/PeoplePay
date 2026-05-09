@@ -3,7 +3,7 @@ import path from 'path';
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../../data/peoplepay.db');
 
-let db: Database.Database;
+let db: Database.Database | undefined;
 
 export function getDb(): Database.Database {
   if (!db) {
@@ -17,6 +17,10 @@ export function getDb(): Database.Database {
 export function closeDb(): void {
   if (db) {
     db.close();
-    db = undefined as unknown as Database.Database;
+    db = undefined;
   }
+}
+
+export function resetDb(): void {
+  closeDb();
 }
