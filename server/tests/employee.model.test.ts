@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { runMigrations } from '../src/db/migrations';
-import { closeDb, getDb } from '../src/db/database';
+import { closeDb, getDb, resetDb } from '../src/db/database';
 import {
   createEmployee,
   deleteEmployee,
@@ -23,7 +23,10 @@ const sample = {
 };
 
 describe('Employee Model', () => {
-  beforeAll(() => runMigrations());
+  beforeAll(() => {
+    resetDb();
+    runMigrations();
+  });
   afterAll(()  => closeDb());
   beforeEach(() => getDb().exec('DELETE FROM employees'));
 
