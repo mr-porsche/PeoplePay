@@ -1,42 +1,5 @@
 import { getDb } from '../db/database';
-
-export interface CountryStat {
-  country:        string;
-  min_salary:     number;
-  max_salary:     number;
-  avg_salary:     number;
-  employee_count: number;
-}
-
-export interface JobTitleStat {
-  job_title:      string;
-  avg_salary:     number;
-  min_salary:     number;
-  max_salary:     number;
-  employee_count: number;
-}
-
-export interface DepartmentStat {
-  department:     string;
-  avg_salary:     number;
-  min_salary:     number;
-  max_salary:     number;
-  employee_count: number;
-}
-
-export interface TopEarner {
-  id:         number;
-  full_name:  string;
-  job_title:  string;
-  department: string;
-  country:    string;
-  salary:     number;
-}
-
-export interface HeadcountStat {
-  country:        string;
-  employee_count: number;
-}
+import { CountryStat, DepartmentStat, HeadcountStat, JobTitleStat, TopEarner } from '@peoplepay/shared';
 
 export function getCountryStats(country?: string): CountryStat[] {
   const db = getDb();

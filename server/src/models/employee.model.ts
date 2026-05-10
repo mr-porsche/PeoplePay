@@ -1,39 +1,6 @@
 import { getDb } from '../db/database';
 import { CreateEmployeeInput, UpdateEmployeeInput } from '../validators/employee.validator';
-
-export interface Employee {
-  id:         number;
-  full_name:  string;
-  job_title:  string;
-  department: string;
-  country:    string;
-  salary:     number;
-  currency:   string;
-  email:      string;
-  phone:      string | null;
-  hired_at:   string;
-  is_active:  number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface PaginatedEmployees {
-  data:       Employee[];
-  total:      number;
-  page:       number;
-  limit:      number;
-  totalPages: number;
-}
-
-export interface EmployeeFilters {
-  country?:    string;
-  job_title?:  string;
-  department?: string;
-  is_active?:  boolean;
-  search?:     string;
-  page?:       number;
-  limit?:      number;
-}
+import { Employee, EmployeeFilters, PaginatedEmployees } from '@peoplepay/shared';
 
 export function getAllEmployees(filters: EmployeeFilters = {}): PaginatedEmployees {
   const db = getDb();
