@@ -45,10 +45,16 @@ export function EmployeesPage() {
   }
 
   function handleSubmit(input: CreateEmployeeInput) {
+    const payload = {
+      ...input,
+      salary: Number(input.salary),
+      is_active: input.is_active ?? true,
+    };
+
     if (editingEmployee) {
-      updateMutation.mutate({ id: editingEmployee.id, input });
+      updateMutation.mutate({ id: editingEmployee.id, input: payload });
     } else {
-      createMutation.mutate(input);
+      createMutation.mutate(payload);
     }
   }
 

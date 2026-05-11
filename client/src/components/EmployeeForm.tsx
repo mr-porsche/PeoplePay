@@ -52,8 +52,13 @@ export function EmployeeForm({ employee, onSubmit, onCancel }: Props) {
     e.preventDefault();
     if (!validate()) return;
     onSubmit({
-      ...form,
+      full_name: form.full_name,
+      job_title: form.job_title,
+      department: form.department,
+      email: form.email,
+      country: form.country,
       salary:    Number(form.salary),
+      currency: form.currency,
       is_active: employee ? Boolean(employee.is_active) : true,
     });
   }
