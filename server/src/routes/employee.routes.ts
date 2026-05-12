@@ -5,7 +5,7 @@ import {
   createEmployee,
   updateEmployee,
   deleteEmployee,
-} from '../models/employee.model';
+} from '../models/employee.model.js';
 import {
   CreateEmployeeSchema,
   UpdateEmployeeSchema,
@@ -22,7 +22,7 @@ router.get('/', (req: Request, res: Response) => {
     search,
     page,
     limit,
-    is_active,
+    status,
   } = req.query;
 
   const result = getAllEmployees({
@@ -30,9 +30,9 @@ router.get('/', (req: Request, res: Response) => {
     job_title:  job_title  as string | undefined,
     department: department as string | undefined,
     search:     search     as string | undefined,
-    is_active:  is_active !== undefined ? is_active === 'true' : undefined,
-    page:       page  ? parseInt(page  as string) : undefined,
-    limit:      limit ? parseInt(limit as string) : undefined,
+    status:     status === 'active' || status === 'inactive' ? status : undefined,
+    page:       page     ? parseInt(page     as string) : undefined,
+    pageSize:   limit    ? parseInt(limit as string) : undefined,
   });
 
   res.json(result);

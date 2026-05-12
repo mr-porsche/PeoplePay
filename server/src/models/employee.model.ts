@@ -2,43 +2,93 @@ import { getDb } from '../db/database';
 import { CreateEmployeeInput, UpdateEmployeeInput } from '../validators/employee.validator';
 import { Employee, EmployeeFilters, PaginatedEmployees } from '@peoplepay/shared';
 
+export type { Employee, EmployeeFilters, PaginatedEmployees };
+
 export function getAllEmployees(filters: EmployeeFilters = {}): PaginatedEmployees {
   const db = getDb();
+
   const {
     country,
     job_title,
     department,
-    is_active,
+    status,
     search,
     page  = 1,
-    limit = 20,
+    pageSize = 20,
   } = filters;
 
   const conditions: string[] = [];
-  const params: unknown[]    = [];
+  const params: unknown[] = [];
 
-  if (country)    { conditions.push('country = ?');    params.push(country); }
-  if (job_title)  { conditions.push('job_title = ?');  params.push(job_title); }
-  if (department) { conditions.push('department = ?'); params.push(department); }
-  if (is_active !== undefined) {
-                    conditions.push('is_active = ?');  params.push(is_active ? 1 : 0); }
-  if (search)     { conditions.push('full_name LIKE ?'); params.push(`%${search}%`); }
+  if (country){
+      conditions.push('country = ?');
+      params.push(country);
+    }
+    
+  if (job_title){
+      conditions.push('job_title = ?');
+      params.push(job_title);
+    }
+    
+  if (department){
+      conditions.push('department = ?');
+      params.push(department);
+    }
+    
+  if (status){
+      conditions.push('status = ?');
+      params.push(status);
+    }
+    
+  if (search){
+      conditions.push('full_name LIKE ?');
+      params.push(`%${search}%`);
+    }
+    
 
-  const where  = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  const offset = (page - 1) * limit;
+  const whereClause  =
+    conditions.length > 0
+      ? `WHERE ${conditions.join(' AND ')}`
+      : '';
+  
+  const offset = (page - 1) * pageSize;
 
-  const total = (db.prepare(`SELECT COUNT(*) as count FROM employees ${where}`).get(...params) as { count: number }).count;
-  const data  = db.prepare(`SELECT * FROM employees ${where} ORDER BY full_name ASC LIMIT ? OFFSET ?`).all(...params, limit, offset) as Employee[];
+  const totalQuery =`
+    SELECT COUNT(*) as count
+    FROM employees
+    ${whereClause}
+  `;
 
-  return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  const dataQuery = `
+    SELECT *
+    FROM employees
+    ${whereClause}
+    ORDER BY full_name ASC
+    LIMIT ? OFFSET ?
+  `;
+  
+  const total = (
+    db.prepare(totalQuery).get(...params) as {
+      count: number;
+    }
+  ).count;
+
+  const data = db
+    .prepare(dataQuery)
+    .all(...params, pageSize, offset) as Employee[];
+
+  return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
 }
 
 export function getEmployeeById(id: number): Employee | undefined {
-  return getDb().prepare('SELECT * FROM employees WHERE id = ?').get(id) as Employee | undefined;
+  return getDb()
+    .prepare('SELECT * FROM employees WHERE id = ?')
+    .get(id) as Employee | undefined;
 }
 
 export function createEmployee(input: CreateEmployeeInput): Employee {
   const db = getDb();
+
   const {
     full_name,
     job_title,
@@ -47,34 +97,61 @@ export function createEmployee(input: CreateEmployeeInput): Employee {
     salary,
     currency = 'USD',
     email,
-    phone    = null,
-    hired_at = new Date().toISOString().split('T')[0],
-    is_active = true,
+    phone = null,
+    hire_date = new Date().toISOString().split('T')[0],
+    status = 'active', 
   } = input;
 
-  const result = db.prepare(`
-    INSERT INTO employees (full_name, job_title, department, country, salary, currency, email, phone, hired_at, is_active)
+  const resultQuery = `
+    INSERT INTO employees (
+      full_name,
+      job_title,
+      department,
+      country,
+      salary,
+      currency,
+      email,
+      phone,
+      hire_date,
+      status
+    )
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(full_name, job_title, department, country, salary, currency, email, phone, hired_at, is_active ? 1 : 0);
+  `;
+
+  const result = db.prepare(resultQuery).run(
+    full_name,
+    job_title,
+    department,
+    country,
+    salary,
+    currency,
+    email,
+    phone,
+    hire_date,
+    status
+  );
 
   return getEmployeeById(result.lastInsertRowid as number)!;
 }
 
 export function updateEmployee(id: number, input: UpdateEmployeeInput): Employee | undefined {
-  const db       = getDb();
-  const existing = getEmployeeById(id);
-  if (!existing) return undefined;
+  const db = getDb();
+  const existingEmployee = getEmployeeById(id);
+  if (!existingEmployee) return undefined;
 
   const fields = Object.keys(input) as (keyof UpdateEmployeeInput)[];
-  if (fields.length === 0) return existing;
+  if (fields.length === 0) return existingEmployee;
 
-  const setClauses = fields.map((f) => `${f} = ?`).join(', ');
-  const values     = fields.map((f) => {
-    if (f === 'is_active') return (input[f] ? 1 : 0);
-    return input[f] ?? null;
-  });
+  const setClauses = fields.map((field) => `${field} = ?`).join(', ');
+  const values = fields.map((field) => input[field] ?? null);
 
-  db.prepare(`UPDATE employees SET ${setClauses}, updated_at = datetime('now') WHERE id = ?`).run(...values, id);
+  const updateQuery = `
+    UPDATE employees
+    SET ${setClauses}, updated_at = datetime('now')
+    WHERE id = ?
+  `;
+  
+  db.prepare(updateQuery).run(...values, id);
   return getEmployeeById(id);
 }
 

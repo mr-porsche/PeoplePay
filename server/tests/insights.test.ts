@@ -19,12 +19,12 @@ describe('Salary Insights Routes', () => {
     getDb().exec('DELETE FROM employees');
 
     // Seed consistent test data
-    createEmployee({ full_name: 'Alice',   job_title: 'Engineer',  department: 'Engineering', country: 'India', salary: 60000, email: 'alice@test.com' });
-    createEmployee({ full_name: 'Bob',     job_title: 'Engineer',  department: 'Engineering', country: 'India', salary: 80000, email: 'bob@test.com' });
-    createEmployee({ full_name: 'Charlie', job_title: 'Designer',  department: 'Design',      country: 'India', salary: 70000, email: 'charlie@test.com' });
-    createEmployee({ full_name: 'Diana',   job_title: 'Engineer',  department: 'Engineering', country: 'USA',   salary: 120000, email: 'diana@test.com' });
+    createEmployee({ full_name: 'Alice',   job_title: 'Engineer',  department: 'Engineering', country: 'India', salary: 60000, email: 'alice@test.com', status: 'active' });
+    createEmployee({ full_name: 'Bob',     job_title: 'Engineer',  department: 'Engineering', country: 'India', salary: 80000, email: 'bob@test.com', status: 'active' });
+    createEmployee({ full_name: 'Charlie', job_title: 'Designer',  department: 'Design',      country: 'India', salary: 70000, email: 'charlie@test.com', status: 'active' });
+    createEmployee({ full_name: 'Diana',   job_title: 'Engineer',  department: 'Engineering', country: 'USA',   salary: 120000, email: 'diana@test.com', status: 'active' });
     createEmployee({ full_name: 'Eve',     job_title: 'Manager',   department: 'Management',  country: 'USA',   salary: 150000, email: 'eve@test.com' });
-    createEmployee({ full_name: 'Frank',   job_title: 'Designer',  department: 'Design',      country: 'USA',   salary: 110000, email: 'frank@test.com' });
+    createEmployee({ full_name: 'Frank',   job_title: 'Designer',  department: 'Design',      country: 'USA',   salary: 110000, email: 'frank@test.com', status: 'active' });
   });
 
   // ── Country Stats ──────────────────────────────────────────────

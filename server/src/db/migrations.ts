@@ -14,14 +14,15 @@ export function runMigrations(): void {
       currency    TEXT    NOT NULL DEFAULT 'USD',
       email       TEXT    NOT NULL UNIQUE,
       phone       TEXT,
-      hired_at    TEXT    NOT NULL DEFAULT (date('now')),
-      is_active   INTEGER NOT NULL DEFAULT 1,
+      hire_date   TEXT    NOT NULL DEFAULT (date('now')),
+      status      TEXT    NOT NULL DEFAULT 'active'
+                  CHECK(status IN ('active', 'inactive')),
       created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
       updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
     );
 
     CREATE INDEX IF NOT EXISTS idx_employees_country   ON employees(country);
     CREATE INDEX IF NOT EXISTS idx_employees_job_title ON employees(job_title);
-    CREATE INDEX IF NOT EXISTS idx_employees_is_active ON employees(is_active);
+    CREATE INDEX IF NOT EXISTS idx_employees_status ON employees(status);
   `);
 }

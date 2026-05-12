@@ -19,7 +19,7 @@ const sample = {
   salary:     80000,
   currency:   'USD',
   email:      'jane.doe@example.com',
-  is_active:  true,
+  status:     'active' as const,
 };
 
 describe('Employee Model', () => {
@@ -93,7 +93,7 @@ describe('Employee Model', () => {
     });
 
     it('should paginate correctly', () => {
-      const result = getAllEmployees({ page: 1, limit: 1 });
+      const result = getAllEmployees({ page: 1, pageSize: 1 });
       expect(result.data.length).toBe(1);
       expect(result.totalPages).toBe(2);
     });

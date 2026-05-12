@@ -9,7 +9,7 @@ let db: Database.Database | undefined;
 let currentPath: string | undefined;
 
 export function getDb(): Database.Database {
-  const dbPath= process.env.DB_PATH || path.join(__dirname, '../../data/peoplepay.db');
+  const dbPath = process.env.DB_PATH || path.join(__dirname, '../../data/peoplepay.db');
   
   if (!db || currentPath !== dbPath) {
     if (db) db.close();

@@ -45,13 +45,13 @@ describe('Database Migrations', () => {
     expect(columnNames).toContain('currency');
     expect(columnNames).toContain('email');
     expect(columnNames).toContain('phone');
-    expect(columnNames).toContain('hired_at');
-    expect(columnNames).toContain('is_active');
+    expect(columnNames).toContain('hire_date');
+    expect(columnNames).toContain('status');
     expect(columnNames).toContain('created_at');
     expect(columnNames).toContain('updated_at');
   });
 
-  it('should create indexes on country, job_title, and is_active', () => {
+  it('should create indexes on country, job_title, and status', () => {
     const db = getDb();
     const indexes = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='employees'`)
@@ -61,7 +61,7 @@ describe('Database Migrations', () => {
 
     expect(indexNames).toContain('idx_employees_country');
     expect(indexNames).toContain('idx_employees_job_title');
-    expect(indexNames).toContain('idx_employees_is_active');
+    expect(indexNames).toContain('idx_employees_status');
   });
 
   it('should enforce salary > 0 constraint', () => {

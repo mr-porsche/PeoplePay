@@ -16,6 +16,7 @@ const sample = {
   salary:     80000,
   currency:   'USD',
   email:      'jane.doe@example.com',
+  status:     'active',
 };
 
 describe('Employee Routes', () => {
