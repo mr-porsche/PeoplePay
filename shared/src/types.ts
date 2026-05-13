@@ -1,6 +1,5 @@
-export type EmployeeStatus = 'active' | 'inactive';
-
-export interface EmployeeBase {
+export interface Employee {
+  id:         number;
   full_name:  string;
   email:      string;
   job_title:  string;
@@ -8,26 +7,23 @@ export interface EmployeeBase {
   country:    string;
   salary:     number;
   currency:   string;
-  phone?:     string | null;
   hire_date:  string;
-  status:     EmployeeStatus;
+  status:     'active' | 'inactive';
   created_at: string;
   updated_at: string;
 }
 
-export interface Employee extends EmployeeBase {
-  id:         number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateEmployeeInput
-  extends Omit<EmployeeBase, 'currency' | 'hire_date' | 'status'> {
-  currency?: string;
-  phone?: string;
-  hire_date?: string;
-  status?: EmployeeStatus;
-}
+export type CreateEmployeeInput = {
+  full_name:  string;
+  email:      string;
+  job_title:  string;
+  department: string;
+  country:    string;
+  salary:     number;
+  currency:   string;
+  hire_date:  string;
+  status:     'active' | 'inactive';
+};
 
 export type UpdateEmployeeInput = Partial<CreateEmployeeInput>;
 
@@ -40,10 +36,10 @@ export interface PaginatedEmployees {
 }
 
 export interface EmployeeFilters {
-  country?:    string;
+  country?:   string;
   department?: string;
   job_title?:  string;
-  status?:     EmployeeStatus;
+  status?:     string;
   search?:     string;
   page?:       number;
   pageSize?:   number;
@@ -51,7 +47,7 @@ export interface EmployeeFilters {
   sortOrder?:  'asc' | 'desc';
 }
 
-export interface CountrySalaryStats {
+export interface CountryStat {
   country:    string;
   headcount:  number;
   min_salary: number;
@@ -63,7 +59,7 @@ export interface CountrySalaryStats {
   p90_salary: number;
 }
 
-export interface JobTitleCountryStat {
+export interface JobTitleStat {
   job_title:  string;
   country:    string;
   headcount:  number;
@@ -103,7 +99,7 @@ export interface HeadcountStat {
 }
 
 export interface ApiResponse<T> {
-  data:    T;
+  data:     T;
   message?: string;
 }
 
