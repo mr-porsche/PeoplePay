@@ -10,66 +10,58 @@ describe('Database Migrations', () => {
     runMigrations();
   });
 
-  afterAll(() => {
-    closeDb();
-  });
+  afterAll(() => closeDb());
 
   beforeEach(() => {
     getDb().exec('DELETE FROM employees');
   });
 
   it('should create the employees table', () => {
-    const db = getDb();
+    const db    = getDb();
     const table = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='employees'`)
       .get() as { name: string } | undefined;
-
     expect(table).toBeDefined();
     expect(table?.name).toBe('employees');
   });
 
   it('should have all required columns', () => {
-    const db = getDb();
-    const columns = db
-      .prepare(`PRAGMA table_info(employees)`)
-      .all() as { name: string }[];
+    const db      = getDb();
+    const columns = db.prepare(`PRAGMA table_info(employees)`).all() as { name: string }[];
+    const names   = columns.map((c) => c.name);
 
-    const columnNames = columns.map((c) => c.name);
-
-    expect(columnNames).toContain('id');
-    expect(columnNames).toContain('full_name');
-    expect(columnNames).toContain('job_title');
-    expect(columnNames).toContain('department');
-    expect(columnNames).toContain('country');
-    expect(columnNames).toContain('salary');
-    expect(columnNames).toContain('currency');
-    expect(columnNames).toContain('email');
-    expect(columnNames).toContain('phone');
-    expect(columnNames).toContain('hire_date');
-    expect(columnNames).toContain('status');
-    expect(columnNames).toContain('created_at');
-    expect(columnNames).toContain('updated_at');
+    expect(names).toContain('id');
+    expect(names).toContain('full_name');
+    expect(names).toContain('email');
+    expect(names).toContain('job_title');
+    expect(names).toContain('department');
+    expect(names).toContain('country');
+    expect(names).toContain('salary');
+    expect(names).toContain('currency');
+    expect(names).toContain('hire_date');
+    expect(names).toContain('status');
+    expect(names).toContain('created_at');
+    expect(names).toContain('updated_at');
   });
 
-  it('should create indexes on country, job_title, and status', () => {
-    const db = getDb();
+  it('should create all indexes', () => {
+    const db      = getDb();
     const indexes = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='employees'`)
       .all() as { name: string }[];
+    const names = indexes.map((i) => i.name);
 
-    const indexNames = indexes.map((i) => i.name);
-
-    expect(indexNames).toContain('idx_employees_country');
-    expect(indexNames).toContain('idx_employees_job_title');
-    expect(indexNames).toContain('idx_employees_status');
+    expect(names).toContain('idx_employees_country');
+    expect(names).toContain('idx_employees_job_title');
+    expect(names).toContain('idx_employees_status');
   });
 
   it('should enforce salary > 0 constraint', () => {
     const db = getDb();
     expect(() => {
       db.prepare(`
-        INSERT INTO employees (full_name, job_title, department, country, salary, email)
-        VALUES ('Test User', 'Engineer', 'Engineering', 'India', -100, 'test@test.com')
+        INSERT INTO employees (full_name, email, job_title, department, country, salary, hire_date)
+        VALUES ('Test', 'test@test.com', 'Eng', 'Engineering', 'India', -100, '2024-01-01')
       `).run();
     }).toThrow();
   });
@@ -77,14 +69,14 @@ describe('Database Migrations', () => {
   it('should enforce unique email constraint', () => {
     const db = getDb();
     db.prepare(`
-      INSERT INTO employees (full_name, job_title, department, country, salary, email)
-      VALUES ('Alice Smith', 'Engineer', 'Engineering', 'India', 50000, 'alice@test.com')
+      INSERT INTO employees (full_name, email, job_title, department, country, salary, hire_date)
+      VALUES ('Alice', 'alice@test.com', 'Eng', 'Engineering', 'India', 50000, '2024-01-01')
     `).run();
 
     expect(() => {
       db.prepare(`
-        INSERT INTO employees (full_name, job_title, department, country, salary, email)
-        VALUES ('Alice Clone', 'Engineer', 'Engineering', 'India', 50000, 'alice@test.com')
+        INSERT INTO employees (full_name, email, job_title, department, country, salary, hire_date)
+        VALUES ('Alice 2', 'alice@test.com', 'Eng', 'Engineering', 'India', 50000, '2024-01-01')
       `).run();
     }).toThrow();
   });

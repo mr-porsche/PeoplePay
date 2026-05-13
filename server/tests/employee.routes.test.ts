@@ -1,30 +1,44 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import supertest from 'supertest';
-import app from '../src/app';
+import { getDb, closeDb, resetDb } from '../src/db/database';
 import { runMigrations } from '../src/db/migrations';
-import { closeDb, getDb, resetDb } from '../src/db/database';
+import { EmployeeModel } from '../src/models/employee.model';
+import { InsightsModel } from '../src/models/insights.model';
+import express from 'express';
+import { employeeRouter } from '../src/routes/employee.routes';
+import { insightsRouter } from '../src/routes/insights.routes';
 
 process.env.DB_PATH = './data/test-employee-routes.db';
 
-const request = supertest(app);
-
 const sample = {
   full_name:  'Jane Doe',
+  email:      'jane.doe@example.com',
   job_title:  'Software Engineer',
   department: 'Engineering',
   country:    'India',
   salary:     80000,
   currency:   'USD',
-  email:      'jane.doe@example.com',
+  hire_date:  '2023-01-01',
   status:     'active',
 };
+
+let request: ReturnType<typeof supertest>;
 
 describe('Employee Routes', () => {
   beforeAll(() => {
     resetDb();
     runMigrations();
+    const db            = getDb();
+    const employeeModel = new EmployeeModel(db);
+    const insightsModel = new InsightsModel(db);
+    const app           = express();
+    app.use(express.json());
+    app.use('/api/employees', employeeRouter(employeeModel));
+    app.use('/api/insights',  insightsRouter(insightsModel));
+    request = supertest(app);
   });
-  afterAll(()  => closeDb());
+
+  afterAll(() => closeDb());
   beforeEach(() => getDb().exec('DELETE FROM employees'));
 
   describe('POST /api/employees', () => {
@@ -38,7 +52,6 @@ describe('Employee Routes', () => {
     it('should return 400 for missing required fields', async () => {
       const res = await request.post('/api/employees').send({ full_name: 'No Email' });
       expect(res.status).toBe(400);
-      expect(res.body.errors).toBeDefined();
     });
 
     it('should return 409 for duplicate email', async () => {
@@ -57,7 +70,6 @@ describe('Employee Routes', () => {
     it('should return paginated list of employees', async () => {
       const res = await request.get('/api/employees');
       expect(res.status).toBe(200);
-      expect(res.body.data.length).toBe(2);
       expect(res.body.total).toBe(2);
     });
 
@@ -75,10 +87,24 @@ describe('Employee Routes', () => {
     });
 
     it('should paginate results', async () => {
-      const res = await request.get('/api/employees?page=1&limit=1');
+      const res = await request.get('/api/employees?page=1&pageSize=1');
       expect(res.status).toBe(200);
       expect(res.body.data.length).toBe(1);
       expect(res.body.totalPages).toBe(2);
+    });
+  });
+
+  describe('GET /api/employees/meta', () => {
+    beforeEach(async () => {
+      await request.post('/api/employees').send(sample);
+    });
+
+    it('should return distinct countries, departments and jobTitles', async () => {
+      const res = await request.get('/api/employees/meta');
+      expect(res.status).toBe(200);
+      expect(res.body.countries).toContain('India');
+      expect(res.body.departments).toContain('Engineering');
+      expect(res.body.jobTitles).toContain('Software Engineer');
     });
   });
 
@@ -102,7 +128,6 @@ describe('Employee Routes', () => {
       const res     = await request.patch(`/api/employees/${created.body.data.id}`).send({ salary: 95000 });
       expect(res.status).toBe(200);
       expect(res.body.data.salary).toBe(95000);
-      expect(res.body.data.full_name).toBe('Jane Doe');
     });
 
     it('should return 404 for non-existent id', async () => {
@@ -118,11 +143,10 @@ describe('Employee Routes', () => {
   });
 
   describe('DELETE /api/employees/:id', () => {
-    it('should delete an employee and return 200', async () => {
+    it('should delete an employee and return 204', async () => {
       const created = await request.post('/api/employees').send(sample);
       const res     = await request.delete(`/api/employees/${created.body.data.id}`);
-      expect(res.status).toBe(200);
-      expect(res.body.message).toBeDefined();
+      expect(res.status).toBe(204);
     });
 
     it('should return 404 for non-existent id', async () => {

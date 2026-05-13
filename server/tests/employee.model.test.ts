@@ -1,38 +1,38 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { getDb, closeDb, resetDb } from '../src/db/database';
 import { runMigrations } from '../src/db/migrations';
-import { closeDb, getDb, resetDb } from '../src/db/database';
-import {
-  createEmployee,
-  deleteEmployee,
-  getAllEmployees,
-  getEmployeeById,
-  updateEmployee,
-} from '../src/models/employee.model';
+import { EmployeeModel } from '../src/models/employee.model';
 
 process.env.DB_PATH = './data/test-employee-model.db';
 
 const sample = {
   full_name:  'Jane Doe',
+  email:      'jane.doe@example.com',
   job_title:  'Software Engineer',
   department: 'Engineering',
   country:    'India',
   salary:     80000,
   currency:   'USD',
-  email:      'jane.doe@example.com',
+  hire_date:  '2023-01-01',
   status:     'active' as const,
 };
+
+let model: EmployeeModel;
 
 describe('Employee Model', () => {
   beforeAll(() => {
     resetDb();
     runMigrations();
+    model = new EmployeeModel(getDb());
   });
-  afterAll(()  => closeDb());
+
+  afterAll(() => closeDb());
+
   beforeEach(() => getDb().exec('DELETE FROM employees'));
 
-  describe('createEmployee', () => {
+  describe('create', () => {
     it('should create an employee and return it with an id', () => {
-      const emp = createEmployee(sample);
+      const emp = model.create(sample);
       expect(emp.id).toBeDefined();
       expect(emp.full_name).toBe('Jane Doe');
       expect(emp.email).toBe('jane.doe@example.com');
@@ -40,87 +40,131 @@ describe('Employee Model', () => {
 
     it('should default currency to USD', () => {
       const { currency, ...rest } = sample;
-      const emp = createEmployee({ ...rest });
+      const emp = model.create({ ...sample, currency: undefined as any });
       expect(emp.currency).toBe('USD');
     });
 
     it('should throw on duplicate email', () => {
-      createEmployee(sample);
-      expect(() => createEmployee({ ...sample, full_name: 'Other' })).toThrow();
+      model.create(sample);
+      expect(() => model.create({ ...sample, full_name: 'Other' })).toThrow();
     });
   });
 
-  describe('getEmployeeById', () => {
+  describe('findById', () => {
     it('should return the employee by id', () => {
-      const created = createEmployee(sample);
-      const found   = getEmployeeById(created.id);
+      const created = model.create(sample);
+      const found   = model.findById(created.id);
       expect(found).toBeDefined();
       expect(found?.email).toBe(sample.email);
     });
 
     it('should return undefined for non-existent id', () => {
-      expect(getEmployeeById(9999)).toBeUndefined();
+      expect(model.findById(9999)).toBeUndefined();
     });
   });
 
-  describe('getAllEmployees', () => {
+  describe('findByEmail', () => {
+    it('should return the employee by email', () => {
+      model.create(sample);
+      const found = model.findByEmail(sample.email);
+      expect(found).toBeDefined();
+      expect(found?.full_name).toBe('Jane Doe');
+    });
+
+    it('should return undefined for non-existent email', () => {
+      expect(model.findByEmail('nobody@test.com')).toBeUndefined();
+    });
+  });
+
+  describe('findAll', () => {
     beforeEach(() => {
-      createEmployee(sample);
-      createEmployee({ ...sample, email: 'b@example.com', full_name: 'Bob', country: 'USA', job_title: 'Designer' });
+      model.create(sample);
+      model.create({ ...sample, email: 'b@example.com', full_name: 'Bob', country: 'USA', job_title: 'Designer' });
     });
 
     it('should return paginated employees', () => {
-      const result = getAllEmployees();
+      const result = model.findAll({ status: 'active' });
       expect(result.total).toBe(2);
       expect(result.data.length).toBe(2);
     });
 
     it('should filter by country', () => {
-      const result = getAllEmployees({ country: 'India' });
+      const result = model.findAll({ country: 'India' });
       expect(result.total).toBe(1);
       expect(result.data[0].country).toBe('India');
     });
 
     it('should filter by job_title', () => {
-      const result = getAllEmployees({ job_title: 'Designer' });
+      const result = model.findAll({ job_title: 'Designer' });
       expect(result.total).toBe(1);
     });
 
-    it('should search by full_name', () => {
-      const result = getAllEmployees({ search: 'Jane' });
+    it('should search by full_name, email and job_title', () => {
+      const result = model.findAll({ search: 'Jane' });
       expect(result.total).toBe(1);
       expect(result.data[0].full_name).toBe('Jane Doe');
     });
 
     it('should paginate correctly', () => {
-      const result = getAllEmployees({ page: 1, pageSize: 1 });
+      const result = model.findAll({ page: 1, pageSize: 1 });
       expect(result.data.length).toBe(1);
       expect(result.totalPages).toBe(2);
     });
+
+    it('should sort by salary desc', () => {
+      model.create({ ...sample, email: 'c@example.com', full_name: 'Charlie', salary: 120000 });
+      const result = model.findAll({ sortBy: 'salary', sortOrder: 'desc', status: 'active' });
+      expect(result.data[0].salary).toBe(120000);
+    });
   });
 
-  describe('updateEmployee', () => {
+  describe('update', () => {
     it('should update specified fields only', () => {
-      const emp     = createEmployee(sample);
-      const updated = updateEmployee(emp.id, { salary: 95000 });
+      const emp     = model.create(sample);
+      const updated = model.update(emp.id, { salary: 95000 });
       expect(updated?.salary).toBe(95000);
       expect(updated?.full_name).toBe('Jane Doe');
     });
 
     it('should return undefined for non-existent id', () => {
-      expect(updateEmployee(9999, { salary: 1000 })).toBeUndefined();
+      expect(model.update(9999, { salary: 1000 })).toBeUndefined();
     });
   });
 
-  describe('deleteEmployee', () => {
+  describe('delete', () => {
     it('should delete an existing employee and return true', () => {
-      const emp = createEmployee(sample);
-      expect(deleteEmployee(emp.id)).toBe(true);
-      expect(getEmployeeById(emp.id)).toBeUndefined();
+      const emp = model.create(sample);
+      expect(model.delete(emp.id)).toBe(true);
+      expect(model.findById(emp.id)).toBeUndefined();
     });
 
     it('should return false for non-existent id', () => {
-      expect(deleteEmployee(9999)).toBe(false);
+      expect(model.delete(9999)).toBe(false);
+    });
+  });
+
+  describe('distinct helpers', () => {
+    beforeEach(() => {
+      model.create(sample);
+      model.create({ ...sample, email: 'b@example.com', country: 'USA', department: 'Design', job_title: 'Designer' });
+    });
+
+    it('should return distinct countries', () => {
+      const countries = model.distinctCountries();
+      expect(countries).toContain('India');
+      expect(countries).toContain('USA');
+    });
+
+    it('should return distinct departments', () => {
+      const departments = model.distinctDepartments();
+      expect(departments).toContain('Engineering');
+      expect(departments).toContain('Design');
+    });
+
+    it('should return distinct job titles', () => {
+      const titles = model.distinctJobTitles();
+      expect(titles).toContain('Software Engineer');
+      expect(titles).toContain('Designer');
     });
   });
 });

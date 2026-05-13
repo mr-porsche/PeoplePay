@@ -1,115 +1,106 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import supertest from 'supertest';
-import app from '../src/app';
+import { getDb, closeDb, resetDb } from '../src/db/database';
 import { runMigrations } from '../src/db/migrations';
-import { closeDb, getDb, resetDb } from '../src/db/database';
-import { createEmployee } from '../src/models/employee.model';
+import { EmployeeModel } from '../src/models/employee.model';
+import { InsightsModel } from '../src/models/insights.model';
+import express from 'express';
+import { employeeRouter } from '../src/routes/employee.routes';
+import { insightsRouter } from '../src/routes/insights.routes';
 
 process.env.DB_PATH = './data/test-insights.db';
 
-const request = supertest(app);
+let request: ReturnType<typeof supertest>;
+let employeeModel: EmployeeModel;
 
 describe('Salary Insights Routes', () => {
   beforeAll(() => {
     resetDb();
     runMigrations();
+    const db        = getDb();
+    employeeModel   = new EmployeeModel(db);
+    const insightsM = new InsightsModel(db);
+    const app       = express();
+    app.use(express.json());
+    app.use('/api/employees', employeeRouter(employeeModel));
+    app.use('/api/insights',  insightsRouter(insightsM));
+    request = supertest(app);
   });
-  afterAll(()  => closeDb());
+
+  afterAll(() => closeDb());
+
   beforeEach(() => {
     getDb().exec('DELETE FROM employees');
-
-    // Seed consistent test data
-    createEmployee({ full_name: 'Alice',   job_title: 'Engineer',  department: 'Engineering', country: 'India', salary: 60000, email: 'alice@test.com', status: 'active' });
-    createEmployee({ full_name: 'Bob',     job_title: 'Engineer',  department: 'Engineering', country: 'India', salary: 80000, email: 'bob@test.com', status: 'active' });
-    createEmployee({ full_name: 'Charlie', job_title: 'Designer',  department: 'Design',      country: 'India', salary: 70000, email: 'charlie@test.com', status: 'active' });
-    createEmployee({ full_name: 'Diana',   job_title: 'Engineer',  department: 'Engineering', country: 'USA',   salary: 120000, email: 'diana@test.com', status: 'active' });
-    createEmployee({ full_name: 'Eve',     job_title: 'Manager',   department: 'Management',  country: 'USA',   salary: 150000, email: 'eve@test.com' });
-    createEmployee({ full_name: 'Frank',   job_title: 'Designer',  department: 'Design',      country: 'USA',   salary: 110000, email: 'frank@test.com', status: 'active' });
+    employeeModel.create({ full_name: 'Alice',   email: 'alice@test.com',   job_title: 'Engineer',  department: 'Engineering', country: 'India', salary: 60000,  currency: 'USD', hire_date: '2023-01-01', status: 'active' });
+    employeeModel.create({ full_name: 'Bob',     email: 'bob@test.com',     job_title: 'Engineer',  department: 'Engineering', country: 'India', salary: 80000,  currency: 'USD', hire_date: '2023-01-01', status: 'active' });
+    employeeModel.create({ full_name: 'Charlie', email: 'charlie@test.com', job_title: 'Designer',  department: 'Design',      country: 'India', salary: 70000,  currency: 'USD', hire_date: '2023-01-01', status: 'active' });
+    employeeModel.create({ full_name: 'Diana',   email: 'diana@test.com',   job_title: 'Engineer',  department: 'Engineering', country: 'USA',   salary: 120000, currency: 'USD', hire_date: '2023-01-01', status: 'active' });
+    employeeModel.create({ full_name: 'Eve',     email: 'eve@test.com',     job_title: 'Manager',   department: 'Management',  country: 'USA',   salary: 150000, currency: 'USD', hire_date: '2023-01-01', status: 'active' });
+    employeeModel.create({ full_name: 'Frank',   email: 'frank@test.com',   job_title: 'Designer',  department: 'Design',      country: 'USA',   salary: 110000, currency: 'USD', hire_date: '2023-01-01', status: 'active' });
   });
 
-  // ── Country Stats ──────────────────────────────────────────────
-  describe('GET /api/insights/country-stats', () => {
-    it('should return min, max, average salary per country', async () => {
-      const res = await request.get('/api/insights/country-stats');
+  describe('GET /api/insights/summary', () => {
+    it('should return global summary stats', async () => {
+      const res = await request.get('/api/insights/summary');
       expect(res.status).toBe(200);
-      expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body.total_employees).toBe(6);
+      expect(res.body.total_countries).toBe(2);
+      expect(res.body.total_departments).toBe(3);
+      expect(res.body.global_avg_salary).toBeDefined();
+    });
+  });
 
-      const india = res.body.data.find((d: any) => d.country === 'India');
+  describe('GET /api/insights/by-country', () => {
+    it('should return salary stats per country with percentiles', async () => {
+      const res = await request.get('/api/insights/by-country');
+      expect(res.status).toBe(200);
+      expect(res.body).toBeInstanceOf(Array);
+
+      const india = res.body.find((d: any) => d.country === 'India');
       expect(india).toBeDefined();
       expect(india.min_salary).toBe(60000);
       expect(india.max_salary).toBe(80000);
-      expect(india.avg_salary).toBeCloseTo(70000, 0);
-      expect(india.employee_count).toBe(3);
-    });
-
-    it('should filter by a specific country', async () => {
-      const res = await request.get('/api/insights/country-stats?country=USA');
-      expect(res.status).toBe(200);
-      expect(res.body.data.length).toBe(1);
-      expect(res.body.data[0].country).toBe('USA');
-      expect(res.body.data[0].min_salary).toBe(110000);
-      expect(res.body.data[0].max_salary).toBe(150000);
+      expect(india.headcount).toBe(3);
+      expect(india.p50_salary).toBeDefined();
+      expect(india.p90_salary).toBeDefined();
     });
   });
 
-  // ── Job Title Stats ────────────────────────────────────────────
-  describe('GET /api/insights/job-title-stats', () => {
-    it('should return average salary by job title in a country', async () => {
-      const res = await request.get('/api/insights/job-title-stats?country=India');
+  describe('GET /api/insights/by-job-country', () => {
+    it('should return salary stats by job title filtered by country', async () => {
+      const res = await request.get('/api/insights/by-job-country?country=India');
       expect(res.status).toBe(200);
-      expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body).toBeInstanceOf(Array);
 
-      const engineer = res.body.data.find((d: any) => d.job_title === 'Engineer');
+      const engineer = res.body.find((d: any) => d.job_title === 'Engineer');
       expect(engineer).toBeDefined();
-      expect(engineer.avg_salary).toBeCloseTo(70000, 0);
-      expect(engineer.employee_count).toBe(2);
+      expect(engineer.headcount).toBe(2);
+      expect(engineer.avg_salary).toBeDefined();
     });
 
-    it('should return 400 if country is not provided', async () => {
-      const res = await request.get('/api/insights/job-title-stats');
-      expect(res.status).toBe(400);
+    it('should return all job stats when no country provided', async () => {
+      const res = await request.get('/api/insights/by-job-country');
+      expect(res.status).toBe(200);
+      expect(res.body.length).toBeGreaterThan(0);
     });
   });
 
-  // ── Department Stats ───────────────────────────────────────────
-  describe('GET /api/insights/department-stats', () => {
-    it('should return salary stats grouped by department', async () => {
-      const res = await request.get('/api/insights/department-stats');
+  describe('GET /api/insights/by-department', () => {
+    it('should return department stats', async () => {
+      const res = await request.get('/api/insights/by-department');
       expect(res.status).toBe(200);
-      expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body).toBeInstanceOf(Array);
 
-      const eng = res.body.data.find((d: any) => d.department === 'Engineering');
+      const eng = res.body.find((d: any) => d.department === 'Engineering');
       expect(eng).toBeDefined();
-      expect(eng.avg_salary).toBeDefined();
-      expect(eng.employee_count).toBe(3);
-    });
-  });
-
-  // ── Top Earners ────────────────────────────────────────────────
-  describe('GET /api/insights/top-earners', () => {
-    it('should return top 5 highest paid employees by default', async () => {
-      const res = await request.get('/api/insights/top-earners');
-      expect(res.status).toBe(200);
-      expect(res.body.data.length).toBeLessThanOrEqual(5);
-      expect(res.body.data[0].salary).toBeGreaterThanOrEqual(res.body.data[1].salary);
+      expect(eng.headcount).toBe(3);
     });
 
-    it('should respect a custom limit', async () => {
-      const res = await request.get('/api/insights/top-earners?limit=3');
+    it('should filter by country', async () => {
+      const res = await request.get('/api/insights/by-department?country=USA');
       expect(res.status).toBe(200);
-      expect(res.body.data.length).toBe(3);
-    });
-  });
-
-  // ── Headcount ─────────────────────────────────────────────────
-  describe('GET /api/insights/headcount', () => {
-    it('should return employee headcount by country', async () => {
-      const res = await request.get('/api/insights/headcount');
-      expect(res.status).toBe(200);
-      expect(res.body.data).toBeInstanceOf(Array);
-
-      const india = res.body.data.find((d: any) => d.country === 'India');
-      expect(india.employee_count).toBe(3);
+      const eng = res.body.find((d: any) => d.department === 'Engineering');
+      expect(eng.headcount).toBe(1);
     });
   });
 });

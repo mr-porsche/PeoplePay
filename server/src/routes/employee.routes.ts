@@ -1,99 +1,98 @@
-import { Router, Request, Response } from 'express';
-import {
-  getAllEmployees,
-  getEmployeeById,
-  createEmployee,
-  updateEmployee,
-  deleteEmployee,
-} from '../models/employee.model.js';
+import { Router, type Request, type Response } from 'express';
+import { EmployeeModel } from '../models/employee.model';
 import {
   CreateEmployeeSchema,
   UpdateEmployeeSchema,
-} from '../validators/employee.validator';
+  EmployeeFiltersSchema,
+} from '../utils/validation';
 
-const router = Router();
+export function employeeRouter(model: EmployeeModel): Router {
+  const router = Router();
 
-// GET /api/employees
-router.get('/', (req: Request, res: Response) => {
-  const {
-    country,
-    job_title,
-    department,
-    search,
-    page,
-    limit,
-    status,
-  } = req.query;
-
-  const result = getAllEmployees({
-    country:    country    as string | undefined,
-    job_title:  job_title  as string | undefined,
-    department: department as string | undefined,
-    search:     search     as string | undefined,
-    status:     status === 'active' || status === 'inactive' ? status : undefined,
-    page:       page     ? parseInt(page     as string) : undefined,
-    pageSize:   limit    ? parseInt(limit as string) : undefined,
-  });
-
-  res.json(result);
-});
-
-// GET /api/employees/:id
-router.get('/:id', (req: Request<{ id: string }>, res: Response) => {
-  const employee = getEmployeeById(parseInt(req.params.id));
-  if (!employee) {
-    res.status(404).json({ message: 'Employee not found' });
-    return;
-  }
-  res.json({ data: employee });
-});
-
-// POST /api/employees
-router.post('/', (req: Request, res: Response) => {
-  const parsed = CreateEmployeeSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ errors: parsed.error.flatten().fieldErrors });
-    return;
-  }
-
-  try {
-    const employee = createEmployee(parsed.data);
-    res.status(201).json({ data: employee });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    if (message.includes('UNIQUE')) {
-      res.status(409).json({ message: 'Email already exists' });
+  router.get('/', (req: Request, res: Response) => {
+    const parsed = EmployeeFiltersSchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
       return;
     }
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
+    res.json(model.findAll(parsed.data));
+  });
 
-// PATCH /api/employees/:id
-router.patch('/:id', (req: Request<{ id: string }>, res: Response) => {
-  const parsed = UpdateEmployeeSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ errors: parsed.error.flatten().fieldErrors });
-    return;
-  }
+  router.get('/meta', (_req: Request, res: Response) => {
+    res.json({
+      countries: model.distinctCountries(),
+      departments: model.distinctDepartments(),
+      jobTitles: model.distinctJobTitles(),
+    });
+  });
 
-  const updated = updateEmployee(parseInt(req.params.id), parsed.data);
-  if (!updated) {
-    res.status(404).json({ message: 'Employee not found' });
-    return;
-  }
+  router.get('/:id', (req: Request<{ id: string }>, res: Response) => {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: 'Invalid id' });
+      return;
+    }
 
-  res.json({ data: updated });
-});
+    const employee = model.findById(id);
+    if (!employee) {
+      res.status(404).json({ error: 'Employee not found' });
+      return;
+    }
+    res.json({ data: employee });
+  });
 
-// DELETE /api/employees/:id
-router.delete('/:id', (req: Request<{ id: string }>, res: Response) => {
-  const deleted = deleteEmployee(parseInt(req.params.id));
-  if (!deleted) {
-    res.status(404).json({ message: 'Employee not found' });
-    return;
-  }
-  res.json({ message: 'Employee deleted successfully' });
-});
+  router.post('/', (req: Request, res: Response) => {
+    const parsed = CreateEmployeeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
 
-export default router;
+    const existing = model.findByEmail(parsed.data.email);
+    if (existing) {
+      res.status(409).json({ error: 'Email already exists' });
+      return;
+    }
+
+    const employee = model.create(parsed.data);
+    res.status(201).json({ data: employee });
+  });
+
+  router.patch('/:id', (req: Request<{ id: string }>, res: Response) => {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: 'Invalid id' });
+      return;
+    }
+
+    const parsed = UpdateEmployeeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.flatten() });
+      return;
+    }
+
+    const employee = model.update(id, parsed.data);
+    if (!employee) {
+      res.status(404).json({ error: 'Employee not found' });
+      return;
+    }
+    res.json({ data: employee });
+  });
+
+  router.delete('/:id', (req: Request<{ id: string }>, res: Response) => {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: 'Invalid id' });
+      return;
+    }
+
+    const deleted = model.delete(id);
+    if (!deleted) {
+      res.status(404).json({ error: 'Employee not found' });
+      return;
+    }
+    res.status(204).send();
+  });
+
+  return router;
+}

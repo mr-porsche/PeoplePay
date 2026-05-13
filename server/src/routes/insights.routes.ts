@@ -1,49 +1,28 @@
-import { Router, Request, Response } from 'express';
-import {
-  getCountryStats,
-  getDepartmentStats,
-  getHeadcountByCountry,
-  getJobTitleStats,
-  getTopEarners,
-} from '../models/insights.model';
+import { Router, type Request, type Response } from 'express';
+import { InsightsModel } from '../models/insights.model';
 
-const router = Router();
+export function insightsRouter(model: InsightsModel): Router {
+  const router = Router();
 
-// GET /api/insights/country-stats
-router.get('/country-stats', (req: Request, res: Response) => {
-  const country = req.query.country as string | undefined;
-  const data    = getCountryStats(country);
-  res.json({ data });
-});
+  router.get('/summary', (_req: Request, res: Response) => {
+    res.json(model.getSummary());
+  });
 
-// GET /api/insights/job-title-stats?country=India
-router.get('/job-title-stats', (req: Request, res: Response) => {
-  const country = req.query.country as string | undefined;
-  if (!country) {
-    res.status(400).json({ message: 'country query parameter is required' });
-    return;
-  }
-  const data = getJobTitleStats(country);
-  res.json({ data });
-});
+  router.get('/by-country', (_req: Request, res: Response) => {
+    res.json(model.getByCountry());
+  });
 
-// GET /api/insights/department-stats
-router.get('/department-stats', (_req: Request, res: Response) => {
-  const data = getDepartmentStats();
-  res.json({ data });
-});
+  router.get('/by-job-country', (req: Request, res: Response) => {
+    const countryQuery = req.query.country;
+    const country = Array.isArray(countryQuery) ? countryQuery[0] : countryQuery;
+    res.json(model.getByJobAndCountry(country as string | undefined));
+  });
 
-// GET /api/insights/top-earners?limit=5
-router.get('/top-earners', (req: Request, res: Response) => {
-  const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
-  const data  = getTopEarners(limit);
-  res.json({ data });
-});
+  router.get('/by-department', (req: Request, res: Response) => {
+    const countryQuery = req.query.country;
+    const country = Array.isArray(countryQuery) ? countryQuery[0] : countryQuery;
+    res.json(model.getByDepartment(country as string | undefined));
+  });
 
-// GET /api/insights/headcount
-router.get('/headcount', (_req: Request, res: Response) => {
-  const data = getHeadcountByCountry();
-  res.json({ data });
-});
-
-export default router;
+  return router;
+}
