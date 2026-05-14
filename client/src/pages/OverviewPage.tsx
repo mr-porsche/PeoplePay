@@ -27,7 +27,7 @@ export function OverviewPage() {
       icon: Users,
       label: 'Total employees',
       value: summary.total_employees?.toLocaleString() ?? '0',
-      color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/20',
+      color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/10',
     },
     {
       icon: Globe,

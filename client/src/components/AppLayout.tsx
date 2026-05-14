@@ -1,7 +1,8 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Users, BarChart3, Home } from 'lucide-react';
+import { Users, BarChart3, Home, Sun, Moon } from 'lucide-react';
 import { Logo } from './Logo';
 import { cn } from '../lib/utils';
+import { useTheme } from '../hooks/useTheme';
 
 const navItems = [
   { to: '/', icon: Home, label: 'Overview', end: true },
@@ -10,9 +11,10 @@ const navItems = [
 ];
 
 export function AppLayout() {
+  const { theme, toggle } = useTheme();
+
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar */}
       <aside className="w-60 border-r border-border flex flex-col py-6 px-4 shrink-0">
         <div className="mb-8 px-2">
           <Logo size={28} />
@@ -40,12 +42,22 @@ export function AppLayout() {
         </nav>
 
         <div className="mt-auto px-2">
-          <p className="text-xs text-muted-foreground">HR Admin Portal</p>
-          <p className="text-xs text-muted-foreground">PeoplePay v1.0</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground">HR Admin Portal</p>
+              <p className="text-xs text-muted-foreground">PeoplePay v1.0</p>
+            </div>
+            <button
+              onClick={toggle}
+              aria-label="Toggle theme"
+              className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+            >
+              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>

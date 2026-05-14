@@ -1,5 +1,6 @@
-import { Search, Filter, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useState } from 'react';
+import { cn } from '../../lib/utils';
 import type { EmployeeFilters } from '@peoplepay/shared';
 
 interface Props {
@@ -12,6 +13,8 @@ export function Filters({ meta, onFilterChange }: Props) {
   const [country, setCountry] = useState('');
   const [department, setDepartment] = useState('');
   const [status, setStatus] = useState('active');
+
+  const hasActiveFilters = search || country || department || status !== 'active';
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -32,8 +35,11 @@ export function Filters({ meta, onFilterChange }: Props) {
     });
   }
 
-  const selectClass =
-    'border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring';
+  const selectClass = cn(
+    'border border-border rounded-md px-3 py-2 text-sm bg-background',
+    'focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer',
+    'hover:border-primary/50 transition-colors',
+  );
 
   return (
     <div className="flex flex-wrap gap-3 mb-4 items-center">
@@ -41,26 +47,25 @@ export function Filters({ meta, onFilterChange }: Props) {
         <div className="relative">
           <Search
             size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none "
           />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name or email…"
-            className="pl-9 pr-3 py-2 border border-border rounded-md text-sm w-56 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            className="pl-9 pr-3 py-2 border border-border rounded-md text-sm w-56 bg-background focus:outline-none focus:ring-2 focus:ring-ring hover:border-primary/50 transition-colors"
           />
         </div>
         <button
           type="submit"
-          className="px-3 py-2 border border-border rounded-md text-sm hover:bg-muted transition-colors"
+          aria-label="Search"
+          className="p-2 border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-muted hover:border-primary/50 transition-colors"
         >
-          Search
+          <Search size={15} />
         </button>
       </form>
 
       <div className="flex gap-2 items-center flex-wrap">
-        <Filter size={14} className="text-muted-foreground shrink-0" />
-
         <select
           value={country}
           onChange={(e) => {
@@ -71,7 +76,9 @@ export function Filters({ meta, onFilterChange }: Props) {
         >
           <option value="">All countries</option>
           {(meta?.countries ?? []).map((c) => (
-            <option key={c}>{c}</option>
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
         </select>
 
@@ -85,7 +92,9 @@ export function Filters({ meta, onFilterChange }: Props) {
         >
           <option value="">All departments</option>
           {(meta?.departments ?? []).map((d) => (
-            <option key={d}>{d}</option>
+            <option key={d} value={d}>
+              {d}
+            </option>
           ))}
         </select>
 
@@ -104,9 +113,16 @@ export function Filters({ meta, onFilterChange }: Props) {
 
         <button
           onClick={handleReset}
-          className="flex items-center gap-1 px-3 py-2 text-sm text-muted-foreground border border-border rounded-md hover:bg-muted hover:text-foreground transition-colors"
+          aria-label="Reset filters"
+          title="Reset filters"
+          className={cn(
+            'p-2 rounded-md border transition-colors',
+            hasActiveFilters
+              ? 'border-red-300 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'
+              : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground',
+          )}
         >
-          <X size={14} /> Reset
+          <X size={15} className="cursor-pointer" />
         </button>
       </div>
     </div>

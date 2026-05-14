@@ -1,18 +1,18 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import type { Employee } from '@peoplepay/shared';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { X } from 'lucide-react';
 import { employeesApi } from '../lib/api';
 import { cn } from '../lib/utils';
-import { X } from 'lucide-react';
+import type { Employee } from '@peoplepay/shared';
 
 const schema = z.object({
-  full_name: z.string().min(3, 'Required'),
+  full_name: z.string().min(2, 'Required'),
   email: z.string().email('Invalid email'),
-  job_title: z.string().min(3, 'Required'),
+  job_title: z.string().min(2, 'Required'),
   department: z.string().min(2, 'Required'),
-  country: z.string().min(3, 'Required'),
+  country: z.string().min(2, 'Required'),
   salary: z.coerce.number().positive('Must be positive'),
   currency: z.string().length(3).default('USD'),
   hire_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD'),
@@ -49,11 +49,7 @@ export function EmployeeForm({ employee, meta, onClose }: Props) {
           hire_date: employee.hire_date,
           status: employee.status,
         }
-      : {
-          salary: 0,
-          currency: 'USD',
-          status: 'active',
-        },
+      : { currency: 'USD', status: 'active' },
   });
 
   const mutation = useMutation({
@@ -65,44 +61,60 @@ export function EmployeeForm({ employee, meta, onClose }: Props) {
     },
   });
 
-  const inputClass = (hasError?: boolean) =>
+  const inputClass = (hasError: boolean) =>
     cn(
-      'w-full border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring',
-      hasError ? 'border-destructive' : 'border-border',
+      'w-full border rounded-md px-3 py-2 text-sm bg-background',
+      'focus:outline-none focus:ring-2 focus:ring-ring transition-colors',
+      'placeholder:text-muted-foreground/50',
+      hasError ? 'border-destructive' : 'border-border hover:border-primary/50',
     );
 
-  const field = (label: string, name: keyof FormValues, type: string = 'text') => (
-    <div>
-      <label className="block text-sm font-medium mb-1">{label}</label>
-      <input type={type} {...register(name)} className={inputClass(!!errors[name])} />
-      {errors[name] && (
-        <p className="text-xs text-destructive mt-1">{errors[name]?.message as string}</p>
-      )}
-    </div>
-  );
+  const errorMsg = (msg?: string) =>
+    msg ? <p className="text-xs text-destructive mt-1">{msg}</p> : null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-background rounded-lg border border-border w-full max-w-xl max-h-[90vh] overflow-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+      <div className="bg-background rounded-lg border border-border w-full max-w-xl max-h-[90vh] overflow-auto shadow-xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-lg font-semibold">{isEdit ? 'Edit Employee' : 'Add Employee'}</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X size={20} />
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="px-6 py-4 space-y-4">
+        <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="px-6 py-5 space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            {field('Full name', 'full_name')}
-            {field('Email', 'email', 'email')}
+            <div>
+              <label className="block text-sm font-medium mb-1.5">Full name</label>
+              <input
+                {...register('full_name')}
+                placeholder="Jane Doe"
+                className={inputClass(!!errors.full_name)}
+              />
+              {errorMsg(errors.full_name?.message)}
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1.5">Email</label>
+              <input
+                type="email"
+                {...register('email')}
+                placeholder="jane@company.com"
+                className={inputClass(!!errors.email)}
+              />
+              {errorMsg(errors.email?.message)}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Job title</label>
+              <label className="block text-sm font-medium mb-1.5">Job title</label>
               <input
                 list="job-titles"
                 {...register('job_title')}
+                placeholder="Software Engineer"
                 className={inputClass(!!errors.job_title)}
               />
               <datalist id="job-titles">
@@ -110,16 +122,14 @@ export function EmployeeForm({ employee, meta, onClose }: Props) {
                   <option key={t} value={t} />
                 ))}
               </datalist>
-              {errors.job_title && (
-                <p className="text-xs text-destructive mt-1">{errors.job_title.message}</p>
-              )}
+              {errorMsg(errors.job_title?.message)}
             </div>
-
             <div>
-              <label className="block text-sm font-medium mb-1">Department</label>
+              <label className="block text-sm font-medium mb-1.5">Department</label>
               <input
                 list="departments"
                 {...register('department')}
+                placeholder="Engineering"
                 className={inputClass(!!errors.department)}
               />
               <datalist id="departments">
@@ -127,18 +137,17 @@ export function EmployeeForm({ employee, meta, onClose }: Props) {
                   <option key={d} value={d} />
                 ))}
               </datalist>
-              {errors.department && (
-                <p className="text-xs text-destructive mt-1">{errors.department.message}</p>
-              )}
+              {errorMsg(errors.department?.message)}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Country</label>
+              <label className="block text-sm font-medium mb-1.5">Country</label>
               <input
                 list="countries"
                 {...register('country')}
+                placeholder="India"
                 className={inputClass(!!errors.country)}
               />
               <datalist id="countries">
@@ -146,29 +155,47 @@ export function EmployeeForm({ employee, meta, onClose }: Props) {
                   <option key={c} value={c} />
                 ))}
               </datalist>
-              {errors.country && (
-                <p className="text-xs text-destructive mt-1">{errors.country.message}</p>
-              )}
+              {errorMsg(errors.country?.message)}
             </div>
-
             <div className="grid grid-cols-3 gap-2">
-              <div className="col-span-2">{field('Salary', 'salary', 'number')}</div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium mb-1.5">Salary</label>
+                <input
+                  type="number"
+                  {...register('salary')}
+                  placeholder="75000"
+                  className={inputClass(!!errors.salary)}
+                />
+                {errorMsg(errors.salary?.message)}
+              </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Currency</label>
+                <label className="block text-sm font-medium mb-1.5">Currency</label>
                 <input
                   {...register('currency')}
                   maxLength={3}
-                  className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring uppercase"
+                  placeholder="USD"
+                  className={cn(inputClass(!!errors.currency), 'uppercase')}
                 />
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {field('Hire date (YYYY-MM-DD)', 'hire_date')}
             <div>
-              <label className="block text-sm font-medium mb-1">Status</label>
-              <select {...register('status')} className={inputClass(!!errors.status)}>
+              <label className="block text-sm font-medium mb-1.5">Hire date</label>
+              <input
+                type="date"
+                {...register('hire_date')}
+                className={inputClass(!!errors.hire_date)}
+              />
+              {errorMsg(errors.hire_date?.message)}
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1.5">Status</label>
+              <select
+                {...register('status')}
+                className={cn(inputClass(!!errors.status), 'cursor-pointer')}
+              >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
@@ -176,12 +203,12 @@ export function EmployeeForm({ employee, meta, onClose }: Props) {
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
+            <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
               {(mutation.error as Error)?.message ?? 'Something went wrong'}
             </p>
           )}
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex justify-end gap-3 pt-2 border-t border-border mt-4">
             <button
               type="button"
               onClick={onClose}

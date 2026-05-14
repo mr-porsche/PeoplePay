@@ -5,9 +5,10 @@ interface Props {
   value: string;
   icon?: LucideIcon;
   color?: string;
+  note?: string;
 }
 
-export function StatCard({ label, value, icon: Icon, color }: Props) {
+export function StatCard({ label, value, icon: Icon, color, note }: Props) {
   return (
     <div className="bg-background border border-border rounded-lg p-5 hover:shadow-sm transition-shadow">
       {Icon && color && (
@@ -19,6 +20,7 @@ export function StatCard({ label, value, icon: Icon, color }: Props) {
       <p className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wide">
         {label}
       </p>
+      {note && <p className="text-xs text-muted-foreground/60 mt-1">{note}</p>}
     </div>
   );
 }
