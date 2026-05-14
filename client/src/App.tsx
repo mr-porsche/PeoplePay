@@ -1,45 +1,31 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AppLayout } from './components/AppLayout';
+import { OverviewPage } from './pages/OverviewPage';
 import { EmployeesPage } from './pages/EmployeesPage';
-import { InsightsPage } from './pages/InsightsPage';
+import { InsightsDashboard } from './pages/InsightsDashboard';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <div className="flex flex-col min-h-screen">
-          <nav className="border-b border-(--border) px-6 py-4 flex items-center gap-8">
-            <span className="font-semibold text-(--text-h) text-lg tracking-tight">PeoplePay</span>
-            <div className="flex gap-6">
-              <NavLink
-                to="/"
-                end
-                className={({ isActive }) =>
-                  `text-sm transition-colors ${isActive ? 'text-(--accent)' : 'text-(--text) hover:text-(--text-h)'}`
-                }
-              >
-                Employees
-              </NavLink>
-              <NavLink
-                to="/insights"
-                className={({ isActive }) =>
-                  `text-sm transition-colors ${isActive ? 'text-(--accent)' : 'text-(--text) hover:text-(--text-h)'}`
-                }
-              >
-                Insights
-              </NavLink>
-            </div>
-          </nav>
-
-          <main className="flex-1">
-            <Routes>
-              <Route path="/"         element={<EmployeesPage />} />
-              <Route path="/insights" element={<InsightsPage />} />
-            </Routes>
-          </main>
-        </div>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<OverviewPage />} />
+            <Route path="/employees" element={<EmployeesPage />} />
+            <Route path="/insights" element={<InsightsDashboard />} />
+          </Route>
+        </Routes>
       </BrowserRouter>
     </QueryClientProvider>
   );

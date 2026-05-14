@@ -1,111 +1,86 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { EmployeeTable } from '../components/EmployeeTable';
+import { employeesApi } from '../lib/api';
+import { TableHeader } from '../components/employees/TableHeader';
+import { Filters } from '../components/employees/Filters';
+import { Table } from '../components/employees/Table';
+import { Pagination } from '../components/employees/Pagination';
 import { EmployeeForm } from '../components/EmployeeForm';
-import { EmployeeFilters } from '../components/EmployeeFilters';
-import { Pagination } from '../components/Pagination';
-import { fetchEmployees, createEmployee, updateEmployee, deleteEmployee } from '../api/employees';
-import type { Employee, CreateEmployeeInput, EmployeeFilters as Filters } from '@peoplepay/shared';
+import type { Employee, EmployeeFilters } from '@peoplepay/shared';
+
+const PAGE_SIZE = 50;
 
 export function EmployeesPage() {
   const queryClient = useQueryClient();
-  const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState<Omit<Filters, 'page' | 'limit' | 'is_active'>>({});
-  const [showForm, setShowForm] = useState(false);
-  const [editingEmployee, setEditing] = useState<Employee | null>(null);
+  const [filters, setFilters] = useState<EmployeeFilters>({
+    page: 1,
+    pageSize: PAGE_SIZE,
+    status: 'active',
+  });
+  const [formOpen, setFormOpen] = useState(false);
+  const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['employees', page, filters],
-    queryFn:  () => fetchEmployees({ ...filters, page, limit: 20 }),
+    queryKey: ['employees', filters],
+    queryFn: () => employeesApi.list(filters),
   });
 
-  const createMutation = useMutation({
-    mutationFn: createEmployee,
-    onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['employees'] }); setShowForm(false); },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, input }: { id: number; input: CreateEmployeeInput }) => updateEmployee(id, input),
-    onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['employees'] }); setEditing(null); },
+  const { data: meta } = useQuery({
+    queryKey: ['employees-meta'],
+    queryFn: employeesApi.meta,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteEmployee,
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['employees'] }),
+    mutationFn: (id: number) => employeesApi.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['employees'] }),
   });
 
-  function handleFilterChange(f: Omit<Filters, 'page' | 'limit' | 'is_active'>) {
-    setFilters(f);
-    setPage(1);
+  function handleFilterChange(partial: Partial<EmployeeFilters>) {
+    setFilters((f) => ({ ...f, ...partial }));
+  }
+
+  function handlePageChange(page: number) {
+    setFilters((f) => ({ ...f, page }));
   }
 
   function handleEdit(emp: Employee) {
-    setEditing(emp);
-    setShowForm(true);
+    setEditEmployee(emp);
+    setFormOpen(true);
   }
 
-  function handleSubmit(input: CreateEmployeeInput) {
-    const payload = {
-      ...input,
-      salary: Number(input.salary),
-      is_active: input.is_active ?? true,
-    };
-
-    if (editingEmployee) {
-      updateMutation.mutate({ id: editingEmployee.id, input: payload });
-    } else {
-      createMutation.mutate(payload);
-    }
-  }
-
-  function handleCancel() {
-    setShowForm(false);
-    setEditing(null);
+  function handleFormClose() {
+    setFormOpen(false);
+    setEditEmployee(null);
+    queryClient.invalidateQueries({ queryKey: ['employees'] });
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-(--text-h)">Employees</h1>
-        <button
-          onClick={() => { setEditing(null); setShowForm(true); }}
-          className="px-4 py-2 text-sm rounded bg-(--accent) text-white hover:opacity-90 transition-opacity"
-        >
-          Add Employee
-        </button>
-      </div>
+    <div className="p-6">
+      <TableHeader
+        total={data?.total}
+        onAdd={() => {
+          setEditEmployee(null);
+          setFormOpen(true);
+        }}
+      />
 
-      {showForm && (
-        <div className="border border-(--border) rounded p-6">
-          <h2 className="text-base font-semibold text-(--text-h) mb-4">
-            {editingEmployee ? 'Edit Employee' : 'Add Employee'}
-          </h2>
-          <EmployeeForm
-            employee={editingEmployee ?? undefined}
-            onSubmit={handleSubmit}
-            onCancel={handleCancel}
-          />
-        </div>
-      )}
+      <Filters meta={meta} onFilterChange={handleFilterChange} />
 
-      <EmployeeFilters onFilterChange={handleFilterChange} />
+      <Table
+        employees={data?.data ?? []}
+        isLoading={isLoading}
+        onEdit={handleEdit}
+        onDelete={(id) => deleteMutation.mutate(id)}
+      />
 
-      {isLoading ? (
-        <div className="text-center py-8 text-(--text)">Loading...</div>
-      ) : (
-        <>
-          <EmployeeTable
-            employees={data?.data ?? []}
-            onEdit={handleEdit}
-            onDelete={(id) => deleteMutation.mutate(id)}
-          />
-          <Pagination
-            page={page}
-            totalPages={data?.totalPages ?? 1}
-            onPageChange={setPage}
-          />
-        </>
-      )}
+      <Pagination
+        page={data?.page ?? 1}
+        totalPages={data?.totalPages ?? 1}
+        total={data?.total ?? 0}
+        onPageChange={handlePageChange}
+      />
+
+      {formOpen && <EmployeeForm employee={editEmployee} meta={meta} onClose={handleFormClose} />}
     </div>
   );
 }
