@@ -6,5 +6,14 @@
     "client",
     "server",
     "shared"
-  ]
+  ],
+  "scripts": {
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "test:server": "npm run test --workspace=server",
+    "test:client": "npm run test --workspace=client",
+    "test": "npm run test:server && npm run test:client",
+    "build:server": "npm run build --workspace=server",
+    "build:client": "npm run build --workspace=client"
+  }
 }
