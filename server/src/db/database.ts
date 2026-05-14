@@ -12,7 +12,6 @@ export function getDb(): Database.Database {
   const dbPath = process.env.DB_PATH || path.join(__dirname, '../../data/peoplepay.db');
 
   if (!db || currentPath !== dbPath) {
-    if (db) db.close();
     db = new Database(dbPath);
     currentPath = dbPath;
 

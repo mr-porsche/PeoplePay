@@ -8,17 +8,17 @@ export function insightsRouter(model: InsightsModel): Router {
     res.json(model.getSummary());
   });
 
-  router.get('/by-country', (_req: Request, res: Response) => {
+  router.get('/country-stats', (_req: Request, res: Response) => {
     res.json(model.getByCountry());
   });
 
-  router.get('/by-job-country', (req: Request, res: Response) => {
+  router.get('/job-title-stats', (req: Request, res: Response) => {
     const countryQuery = req.query.country;
     const country = Array.isArray(countryQuery) ? countryQuery[0] : countryQuery;
     res.json(model.getByJobAndCountry(country as string | undefined));
   });
 
-  router.get('/by-department', (req: Request, res: Response) => {
+  router.get('/department-stats', (req: Request, res: Response) => {
     const countryQuery = req.query.country;
     const country = Array.isArray(countryQuery) ? countryQuery[0] : countryQuery;
     res.json(model.getByDepartment(country as string | undefined));

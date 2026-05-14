@@ -17,13 +17,13 @@ describe('Salary Insights Routes', () => {
   beforeAll(() => {
     resetDb();
     runMigrations();
-    const db        = getDb();
-    employeeModel   = new EmployeeModel(db);
+    const db = getDb();
+    employeeModel = new EmployeeModel(db);
     const insightsM = new InsightsModel(db);
-    const app       = express();
+    const app = express();
     app.use(express.json());
     app.use('/api/employees', employeeRouter(employeeModel));
-    app.use('/api/insights',  insightsRouter(insightsM));
+    app.use('/api/insights', insightsRouter(insightsM));
     request = supertest(app);
   });
 
@@ -31,12 +31,72 @@ describe('Salary Insights Routes', () => {
 
   beforeEach(() => {
     getDb().exec('DELETE FROM employees');
-    employeeModel.create({ full_name: 'Alice',   email: 'alice@test.com',   job_title: 'Engineer',  department: 'Engineering', country: 'India', salary: 60000,  currency: 'USD', hire_date: '2023-01-01', status: 'active' });
-    employeeModel.create({ full_name: 'Bob',     email: 'bob@test.com',     job_title: 'Engineer',  department: 'Engineering', country: 'India', salary: 80000,  currency: 'USD', hire_date: '2023-01-01', status: 'active' });
-    employeeModel.create({ full_name: 'Charlie', email: 'charlie@test.com', job_title: 'Designer',  department: 'Design',      country: 'India', salary: 70000,  currency: 'USD', hire_date: '2023-01-01', status: 'active' });
-    employeeModel.create({ full_name: 'Diana',   email: 'diana@test.com',   job_title: 'Engineer',  department: 'Engineering', country: 'USA',   salary: 120000, currency: 'USD', hire_date: '2023-01-01', status: 'active' });
-    employeeModel.create({ full_name: 'Eve',     email: 'eve@test.com',     job_title: 'Manager',   department: 'Management',  country: 'USA',   salary: 150000, currency: 'USD', hire_date: '2023-01-01', status: 'active' });
-    employeeModel.create({ full_name: 'Frank',   email: 'frank@test.com',   job_title: 'Designer',  department: 'Design',      country: 'USA',   salary: 110000, currency: 'USD', hire_date: '2023-01-01', status: 'active' });
+    employeeModel.create({
+      full_name: 'Alice',
+      email: 'alice@test.com',
+      job_title: 'Engineer',
+      department: 'Engineering',
+      country: 'India',
+      salary: 60000,
+      currency: 'USD',
+      hire_date: '2023-01-01',
+      status: 'active',
+    });
+    employeeModel.create({
+      full_name: 'Bob',
+      email: 'bob@test.com',
+      job_title: 'Engineer',
+      department: 'Engineering',
+      country: 'India',
+      salary: 80000,
+      currency: 'USD',
+      hire_date: '2023-01-01',
+      status: 'active',
+    });
+    employeeModel.create({
+      full_name: 'Charlie',
+      email: 'charlie@test.com',
+      job_title: 'Designer',
+      department: 'Design',
+      country: 'India',
+      salary: 70000,
+      currency: 'USD',
+      hire_date: '2023-01-01',
+      status: 'active',
+    });
+    employeeModel.create({
+      full_name: 'Diana',
+      email: 'diana@test.com',
+      job_title: 'Engineer',
+      department: 'Engineering',
+      country: 'USA',
+      salary: 120000,
+      currency: 'USD',
+      hire_date: '2023-01-01',
+      status: 'active',
+    });
+    employeeModel.create({
+      full_name: 'Eve',
+      email: 'eve@test.com',
+      job_title: 'Manager',
+      department: 'Management',
+      country: 'USA',
+      salary: 150000,
+      currency: 'USD',
+      hire_date: '2023-01-01',
+      status: 'active',
+    });
+    employeeModel.create({
+      full_name: 'Frank',
+      email: 'frank@test.com',
+      job_title: 'Designer',
+      department: 'Design',
+      country: 'USA',
+      salary: 110000,
+      currency: 'USD',
+      hire_date: '2023-01-01',
+      status: 'active',
+    });
   });
 
   describe('GET /api/insights/summary', () => {
@@ -50,9 +110,9 @@ describe('Salary Insights Routes', () => {
     });
   });
 
-  describe('GET /api/insights/by-country', () => {
+  describe('GET /api/insights/country-stats', () => {
     it('should return salary stats per country with percentiles', async () => {
-      const res = await request.get('/api/insights/by-country');
+      const res = await request.get('/api/insights/country-stats');
       expect(res.status).toBe(200);
       expect(res.body).toBeInstanceOf(Array);
 
@@ -66,9 +126,9 @@ describe('Salary Insights Routes', () => {
     });
   });
 
-  describe('GET /api/insights/by-job-country', () => {
+  describe('GET /api/insights/job-title-stats', () => {
     it('should return salary stats by job title filtered by country', async () => {
-      const res = await request.get('/api/insights/by-job-country?country=India');
+      const res = await request.get('/api/insights/job-title-stats?country=India');
       expect(res.status).toBe(200);
       expect(res.body).toBeInstanceOf(Array);
 
@@ -79,15 +139,15 @@ describe('Salary Insights Routes', () => {
     });
 
     it('should return all job stats when no country provided', async () => {
-      const res = await request.get('/api/insights/by-job-country');
+      const res = await request.get('/api/insights/job-title-stats');
       expect(res.status).toBe(200);
       expect(res.body.length).toBeGreaterThan(0);
     });
   });
 
-  describe('GET /api/insights/by-department', () => {
+  describe('GET /api/insights/department-stats', () => {
     it('should return department stats', async () => {
-      const res = await request.get('/api/insights/by-department');
+      const res = await request.get('/api/insights/department-stats');
       expect(res.status).toBe(200);
       expect(res.body).toBeInstanceOf(Array);
 
@@ -97,7 +157,7 @@ describe('Salary Insights Routes', () => {
     });
 
     it('should filter by country', async () => {
-      const res = await request.get('/api/insights/by-department?country=USA');
+      const res = await request.get('/api/insights/department-stats?country=USA');
       expect(res.status).toBe(200);
       const eng = res.body.find((d: any) => d.department === 'Engineering');
       expect(eng.headcount).toBe(1);
