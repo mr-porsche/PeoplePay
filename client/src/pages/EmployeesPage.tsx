@@ -1,12 +1,13 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { employeesApi } from '../lib/api';
-import { TableHeader } from '../components/employees/TableHeader';
-import { Filters } from '../components/employees/Filters';
-import { Table } from '../components/employees/Table';
-import { Pagination } from '../components/employees/Pagination';
-import { EmployeeForm } from '../components/EmployeeForm';
-import type { Employee, EmployeeFilters } from '@peoplepay/shared';
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { employeesApi } from "../lib/api";
+import { TableHeader } from "../components/employees/TableHeader";
+import { Filters } from "../components/employees/Filters";
+import { Table } from "../components/employees/Table";
+import { Pagination } from "../components/employees/Pagination";
+import { EmployeeForm } from "../components/EmployeeForm";
+import type { Employee, EmployeeFilters } from "@peoplepay/shared";
+import { SeedUploader } from "../components/employees/SeedUploader";
 
 const PAGE_SIZE = 50;
 
@@ -15,24 +16,25 @@ export function EmployeesPage() {
   const [filters, setFilters] = useState<EmployeeFilters>({
     page: 1,
     pageSize: PAGE_SIZE,
-    status: 'active',
+    status: "active",
   });
   const [formOpen, setFormOpen] = useState(false);
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
+  const [seedOpen, setSeedOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['employees', filters],
+    queryKey: ["employees", filters],
     queryFn: () => employeesApi.list(filters),
   });
 
   const { data: meta } = useQuery({
-    queryKey: ['employees-meta'],
+    queryKey: ["employees-meta"],
     queryFn: employeesApi.meta,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => employeesApi.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['employees'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["employees"] }),
   });
 
   function handleFilterChange(partial: Partial<EmployeeFilters>) {
@@ -51,7 +53,7 @@ export function EmployeesPage() {
   function handleFormClose() {
     setFormOpen(false);
     setEditEmployee(null);
-    queryClient.invalidateQueries({ queryKey: ['employees'] });
+    queryClient.invalidateQueries({ queryKey: ["employees"] });
   }
 
   return (
@@ -62,6 +64,7 @@ export function EmployeesPage() {
           setEditEmployee(null);
           setFormOpen(true);
         }}
+        onSeed={() => setSeedOpen(true)}
       />
 
       <Filters meta={meta} onFilterChange={handleFilterChange} />
@@ -80,7 +83,15 @@ export function EmployeesPage() {
         onPageChange={handlePageChange}
       />
 
-      {formOpen && <EmployeeForm employee={editEmployee} meta={meta} onClose={handleFormClose} />}
+      {formOpen && (
+        <EmployeeForm
+          employee={editEmployee}
+          meta={meta}
+          onClose={handleFormClose}
+        />
+      )}
+
+      {seedOpen && <SeedUploader onClose={() => setSeedOpen(false)} />}
     </div>
   );
 }

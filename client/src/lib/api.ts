@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from "axios";
 import type {
   Employee,
   CreateEmployeeInput,
@@ -9,12 +9,12 @@ import type {
   JobTitleStat,
   DepartmentStat,
   InsightsSummary,
-} from '@peoplepay/shared';
+} from "@peoplepay/shared";
 
-const api = axios.create({ baseURL: '/api' });
+const api = axios.create({ baseURL: "/api" });
 
 function unwrapArray<T>(res: unknown): T[] {
-  if (!res || typeof res !== 'object') return [];
+  if (!res || typeof res !== "object") return [];
 
   const r = res as Record<string, unknown>;
 
@@ -26,40 +26,63 @@ function unwrapArray<T>(res: unknown): T[] {
 // ── Employees ─────────────────────────────────────────────────────────────────
 export const employeesApi = {
   list: (filters: EmployeeFilters = {}) =>
-    api.get<PaginatedEmployees>('/employees', { params: filters }).then((r) => r.data),
+    api
+      .get<PaginatedEmployees>("/employees", { params: filters })
+      .then((r) => r.data),
 
-  get: (id: number) => api.get<{ data: Employee }>(`/employees/${id}`).then((r) => r.data.data),
+  get: (id: number) =>
+    api.get<{ data: Employee }>(`/employees/${id}`).then((r) => r.data.data),
 
   meta: () =>
     api
-      .get<{ countries: string[]; departments: string[]; jobTitles: string[] }>('/employees/meta')
+      .get<{
+        countries: string[];
+        departments: string[];
+        jobTitles: string[];
+      }>("/employees/meta")
       .then((r) => r.data),
 
   create: (data: CreateEmployeeInput) =>
-    api.post<{ data: Employee }>('/employees', data).then((r) => r.data.data),
+    api.post<{ data: Employee }>("/employees", data).then((r) => r.data.data),
 
   update: (id: number, data: UpdateEmployeeInput) =>
-    api.patch<{ data: Employee }>(`/employees/${id}`, data).then((r) => r.data.data),
+    api
+      .patch<{ data: Employee }>(`/employees/${id}`, data)
+      .then((r) => r.data.data),
 
   delete: (id: number) => api.delete(`/employees/${id}`),
+
+  // ── Seed ──────────────────────────
+  seed: (data: { firstNames: string[]; lastNames: string[] }) =>
+    api
+      .post<{
+        seeded: number;
+        warnings?: string[];
+        message: string;
+      }>("/employees/seed", data)
+      .then((r) => r.data),
 };
 
 // ── Insights ──────────────────────────────────────────────────────────────────
 export const insightsApi = {
-  summary: () => api.get<InsightsSummary>('/insights/summary').then((r) => r.data),
+  summary: () =>
+    api.get<InsightsSummary>("/insights/summary").then((r) => r.data),
 
-  byCountry: () => api.get('/insights/country-stats').then((r) => unwrapArray<CountryStat>(r.data)),
+  byCountry: () =>
+    api
+      .get("/insights/country-stats")
+      .then((r) => unwrapArray<CountryStat>(r.data)),
 
   byJobCountry: (country?: string) =>
     api
-      .get('/insights/job-title-stats', {
+      .get("/insights/job-title-stats", {
         params: country ? { country } : {},
       })
       .then((r) => unwrapArray<JobTitleStat>(r.data)),
 
   byDepartment: (country?: string) =>
     api
-      .get('/insights/department-stats', {
+      .get("/insights/department-stats", {
         params: country ? { country } : {},
       })
       .then((r) => unwrapArray<DepartmentStat>(r.data)),
