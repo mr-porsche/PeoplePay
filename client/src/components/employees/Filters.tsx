@@ -1,7 +1,7 @@
-import { Search, X } from 'lucide-react';
-import { useState } from 'react';
-import { cn } from '../../lib/utils';
-import type { EmployeeFilters } from '@peoplepay/shared';
+import { Search, X } from "lucide-react";
+import { useState } from "react";
+import { cn } from "../../lib/utils";
+import type { EmployeeFilters } from "@peoplepay/shared";
 
 interface Props {
   meta?: { countries: string[]; departments: string[]; jobTitles: string[] };
@@ -9,12 +9,12 @@ interface Props {
 }
 
 export function Filters({ meta, onFilterChange }: Props) {
-  const [search, setSearch] = useState('');
-  const [country, setCountry] = useState('');
-  const [department, setDepartment] = useState('');
-  const [status, setStatus] = useState('active');
+  const [search, setSearch] = useState("");
+  const [country, setCountry] = useState("");
+  const [department, setDepartment] = useState("");
+  const [status, setStatus] = useState("");
 
-  const hasActiveFilters = search || country || department || status !== 'active';
+  const hasActiveFilters = !!(search || country || department || status);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -22,23 +22,23 @@ export function Filters({ meta, onFilterChange }: Props) {
   }
 
   function handleReset() {
-    setSearch('');
-    setCountry('');
-    setDepartment('');
-    setStatus('active');
+    setSearch("");
+    setCountry("");
+    setDepartment("");
+    setStatus("");
     onFilterChange({
       search: undefined,
       country: undefined,
       department: undefined,
-      status: 'active',
+      status: undefined,
       page: 1,
     });
   }
 
   const selectClass = cn(
-    'border border-border rounded-md px-3 py-2 text-sm bg-background',
-    'focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer',
-    'hover:border-primary/50 transition-colors',
+    "border border-border rounded-md px-3 py-2 text-sm bg-background",
+    "focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer",
+    "hover:border-primary/50 transition-colors",
   );
 
   return (
@@ -47,7 +47,7 @@ export function Filters({ meta, onFilterChange }: Props) {
         <div className="relative">
           <Search
             size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none "
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
           />
           <input
             value={search}
@@ -59,7 +59,7 @@ export function Filters({ meta, onFilterChange }: Props) {
         <button
           type="submit"
           aria-label="Search"
-          className="p-2 border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-muted hover:border-primary/50 transition-colors"
+          className="p-2 border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-muted hover:border-primary/50 transition-colors cursor-pointer"
         >
           <Search size={15} />
         </button>
@@ -86,7 +86,10 @@ export function Filters({ meta, onFilterChange }: Props) {
           value={department}
           onChange={(e) => {
             setDepartment(e.target.value);
-            onFilterChange({ department: e.target.value || undefined, page: 1 });
+            onFilterChange({
+              department: e.target.value || undefined,
+              page: 1,
+            });
           }}
           className={selectClass}
         >
@@ -106,23 +109,25 @@ export function Filters({ meta, onFilterChange }: Props) {
           }}
           className={selectClass}
         >
+          <option value="">All</option>
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
-          <option value="">All</option>
         </select>
 
         <button
           onClick={handleReset}
           aria-label="Reset filters"
-          title="Reset filters"
+          title={
+            hasActiveFilters ? "Clear active filters" : "No active filters"
+          }
           className={cn(
-            'p-2 rounded-md border transition-colors',
+            "p-2 rounded-md border transition-colors cursor-pointer",
             hasActiveFilters
-              ? 'border-red-300 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'
-              : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground',
+              ? "border-red-300 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 dark:border-red-800"
+              : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
         >
-          <X size={15} className="cursor-pointer" />
+          <X size={15} />
         </button>
       </div>
     </div>
