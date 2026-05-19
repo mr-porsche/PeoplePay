@@ -15,9 +15,7 @@ const api = axios.create({ baseURL: "/api" });
 
 function unwrapArray<T>(res: unknown): T[] {
   if (!res || typeof res !== "object") return [];
-
   const r = res as Record<string, unknown>;
-
   if (Array.isArray(r.data)) return r.data as T[];
   if (Array.isArray(res)) return res as T[];
   return [];
@@ -31,7 +29,7 @@ export const employeesApi = {
       .then((r) => r.data),
 
   get: (id: number) =>
-    api.get<{ data: Employee }>(`/employees/${id}`).then((r) => r.data.data),
+    api.get<Employee>(`/employees/${id}`).then((r) => r.data),
 
   meta: () =>
     api
@@ -43,23 +41,36 @@ export const employeesApi = {
       .then((r) => r.data),
 
   create: (data: CreateEmployeeInput) =>
-    api.post<{ data: Employee }>("/employees", data).then((r) => r.data.data),
+    api.post<Employee>("/employees", data).then((r) => r.data),
 
   update: (id: number, data: UpdateEmployeeInput) =>
-    api
-      .patch<{ data: Employee }>(`/employees/${id}`, data)
-      .then((r) => r.data.data),
+    api.patch<Employee>(`/employees/${id}`, data).then((r) => r.data),
 
   delete: (id: number) => api.delete(`/employees/${id}`),
 
   // ── Seed ──────────────────────────
-  seed: (data: { firstNames: string[]; lastNames: string[] }) =>
+  seed: (payload: {
+    format:
+      | "txt_names"
+      | "txt_full"
+      | "txt_columns"
+      | "csv"
+      | "json"
+      | "excel"
+      | string;
+    fillMissing?: boolean;
+    firstNames?: string[];
+    lastNames?: string[];
+    columns?: Record<string, string[]>;
+    records?: object[];
+  }) =>
     api
       .post<{
         seeded: number;
+        skipped: number;
         warnings?: string[];
         message: string;
-      }>("/employees/seed", data)
+      }>("/employees/seed", payload)
       .then((r) => r.data),
 };
 

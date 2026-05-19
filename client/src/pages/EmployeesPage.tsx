@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { employeesApi } from "../lib/api";
+import { EmployeeForm } from "../components/EmployeeForm";
 import { TableHeader } from "../components/employees/TableHeader";
 import { Filters } from "../components/employees/Filters";
 import { Table } from "../components/employees/Table";
 import { Pagination } from "../components/employees/Pagination";
-import { EmployeeForm } from "../components/EmployeeForm";
-import type { Employee, EmployeeFilters } from "@peoplepay/shared";
 import { SeedUploader } from "../components/employees/SeedUploader";
+import type { Employee, EmployeeFilters } from "@peoplepay/shared";
 
 const PAGE_SIZE = 50;
 
@@ -16,11 +16,10 @@ export function EmployeesPage() {
   const [filters, setFilters] = useState<EmployeeFilters>({
     page: 1,
     pageSize: PAGE_SIZE,
-    status: "active",
   });
   const [formOpen, setFormOpen] = useState(false);
-  const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
   const [seedOpen, setSeedOpen] = useState(false);
+  const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["employees", filters],
@@ -38,11 +37,7 @@ export function EmployeesPage() {
   });
 
   function handleFilterChange(partial: Partial<EmployeeFilters>) {
-    setFilters((f) => ({ ...f, ...partial }));
-  }
-
-  function handlePageChange(page: number) {
-    setFilters((f) => ({ ...f, page }));
+    setFilters((f) => ({ ...f, ...partial, page: 1 }));
   }
 
   function handleEdit(emp: Employee) {
@@ -54,6 +49,14 @@ export function EmployeesPage() {
     setFormOpen(false);
     setEditEmployee(null);
     queryClient.invalidateQueries({ queryKey: ["employees"] });
+  }
+
+  function handleSeedClose() {
+    setSeedOpen(false);
+    setFilters({ page: 1, pageSize: PAGE_SIZE });
+    queryClient.invalidateQueries({ queryKey: ["employees"] });
+    queryClient.invalidateQueries({ queryKey: ["employees-meta"] });
+    queryClient.invalidateQueries({ queryKey: ["insights-summary"] });
   }
 
   return (
@@ -80,7 +83,7 @@ export function EmployeesPage() {
         page={data?.page ?? 1}
         totalPages={data?.totalPages ?? 1}
         total={data?.total ?? 0}
-        onPageChange={handlePageChange}
+        onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
       />
 
       {formOpen && (
@@ -91,7 +94,7 @@ export function EmployeesPage() {
         />
       )}
 
-      {seedOpen && <SeedUploader onClose={() => setSeedOpen(false)} />}
+      {seedOpen && <SeedUploader onClose={handleSeedClose} />}
     </div>
   );
 }
