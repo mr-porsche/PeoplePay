@@ -1,5 +1,5 @@
-import { formatCurrency } from '../../lib/utils';
-import type { CountryStat } from '@peoplepay/shared';
+import { formatCurrency } from "../../lib/utils";
+import type { CountryStat } from "@peoplepay/shared";
 
 interface Props {
   data: CountryStat[];
@@ -17,14 +17,16 @@ export function CountryStats({ data }: Props) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/20">
-              {['Country', 'Headcount', 'Min', 'Avg', 'Max', 'P50', 'P90'].map((h) => (
-                <th
-                  key={h}
-                  className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap"
-                >
-                  {h}
-                </th>
-              ))}
+              {["Country", "Headcount", "Min", "Avg", "Max", "P50", "P90"].map(
+                (h) => (
+                  <th
+                    key={h}
+                    className="px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide whitespace-nowrap text-right first:text-left"
+                  >
+                    {h}
+                  </th>
+                ),
+              )}
             </tr>
           </thead>
           <tbody>

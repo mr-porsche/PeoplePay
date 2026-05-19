@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Props {
   page: number;
@@ -13,10 +13,13 @@ export function Pagination({ page, totalPages, total, onPageChange }: Props) {
   return (
     <div className="flex items-center justify-between mt-4 px-1">
       <p className="text-sm text-muted-foreground">
-        Page <span className="font-medium text-foreground">{page}</span> of{' '}
+        Page <span className="font-medium text-foreground">{page}</span> of{" "}
         <span className="font-medium text-foreground">{totalPages}</span>
-        {' · '}
-        <span className="font-medium text-foreground">{total.toLocaleString()}</span> total
+        {" · "}
+        <span className="font-medium text-foreground">
+          {total.toLocaleString()}
+        </span>{" "}
+        total
       </p>
       <div className="flex gap-1">
         <button
