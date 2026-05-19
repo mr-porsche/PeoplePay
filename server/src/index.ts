@@ -1,11 +1,13 @@
-import app from './app';
-import { runMigrations } from './db/migrations';
-import 'dotenv/config';
+import app from "./app";
+import { runMigrations } from "./db/migrations";
+import "dotenv/config";
 
 const PORT = process.env.PORT || 3001;
 
 runMigrations();
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV ?? 'development'} mode`);
+  console.log(
+    `Server running on port ${PORT} in ${process.env.NODE_ENV ?? "development"} mode`,
+  );
 });

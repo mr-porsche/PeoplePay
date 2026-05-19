@@ -1,55 +1,55 @@
 export interface Employee {
-  id:         number;
-  full_name:  string;
-  email:      string;
-  job_title:  string;
+  id: number;
+  full_name: string;
+  email: string;
+  job_title: string;
   department: string;
-  country:    string;
-  salary:     number;
-  currency:   string;
-  hire_date:  string;
-  status:     'active' | 'inactive';
+  country: string;
+  salary: number;
+  currency: string;
+  hire_date: string;
+  status: "active" | "inactive";
   created_at: string;
   updated_at: string;
 }
 
 export type CreateEmployeeInput = {
-  full_name:  string;
-  email:      string;
-  job_title:  string;
+  full_name: string;
+  email: string;
+  job_title: string;
   department: string;
-  country:    string;
-  salary:     number;
-  currency:   string;
-  hire_date:  string;
-  status:     'active' | 'inactive';
+  country: string;
+  salary: number;
+  currency: string;
+  hire_date: string;
+  status: "active" | "inactive";
 };
 
 export type UpdateEmployeeInput = Partial<CreateEmployeeInput>;
 
 export interface PaginatedEmployees {
-  data:       Employee[];
-  total:      number;
-  page:       number;
-  pageSize:   number;
+  data: Employee[];
+  total: number;
+  page: number;
+  pageSize: number;
   totalPages: number;
 }
 
 export interface EmployeeFilters {
-  country?:   string;
+  country?: string;
   department?: string;
-  job_title?:  string;
-  status?:     string;
-  search?:     string;
-  page?:       number;
-  pageSize?:   number;
-  sortBy?:     string;
-  sortOrder?:  'asc' | 'desc';
+  job_title?: string;
+  status?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 export interface CountryStat {
-  country:    string;
-  headcount:  number;
+  country: string;
+  headcount: number;
   min_salary: number;
   max_salary: number;
   avg_salary: number;
@@ -60,9 +60,9 @@ export interface CountryStat {
 }
 
 export interface JobTitleStat {
-  job_title:  string;
-  country:    string;
-  headcount:  number;
+  job_title: string;
+  country: string;
+  headcount: number;
   avg_salary: number;
   min_salary: number;
   max_salary: number;
@@ -70,14 +70,14 @@ export interface JobTitleStat {
 
 export interface DepartmentStat {
   department: string;
-  country:    string;
-  headcount:  number;
+  country: string;
+  headcount: number;
   avg_salary: number;
 }
 
 export interface InsightsSummary {
-  total_employees:   number;
-  total_countries:   number;
+  total_employees: number;
+  total_countries: number;
   total_departments: number;
   global_avg_salary: number;
   global_min_salary: number;
@@ -85,21 +85,21 @@ export interface InsightsSummary {
 }
 
 export interface TopEarner {
-  id:         number;
-  full_name:  string;
-  job_title:  string;
+  id: number;
+  full_name: string;
+  job_title: string;
   department: string;
-  country:    string;
-  salary:     number;
+  country: string;
+  salary: number;
 }
 
 export interface HeadcountStat {
-  country:        string;
+  country: string;
   employee_count: number;
 }
 
 export interface ApiResponse<T> {
-  data:     T;
+  data: T;
   message?: string;
 }
 
