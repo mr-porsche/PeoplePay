@@ -5,6 +5,11 @@ import {
   UpdateEmployeeSchema,
   EmployeeFiltersSchema,
 } from "../utils/validation";
+import {
+  SeedRecord,
+  parseTxtPair,
+  parseTxtColumns,
+} from "../utils/seed/parser";
 
 export function employeeRouter(model: EmployeeModel): Router {
   const router = Router();
@@ -94,50 +99,89 @@ export function employeeRouter(model: EmployeeModel): Router {
     res.status(204).send();
   });
 
-  router.post("/seed", (req: Request, res: Response) => {
-    const { firstNames, lastNames } = req.body as {
-      firstNames: string[];
-      lastNames: string[];
-    };
+  // POST /api/employees/seed
+  router.post("/seed", async (req: Request, res: Response) => {
+    try {
+      const {
+        format = "txt_pair",
+        fillMissing = true,
+        firstNames,
+        lastNames,
+        columns,
+        records,
+      } = req.body as {
+        format?: string;
+        fillMissing?: boolean;
+        firstNames?: string[];
+        lastNames?: string[];
+        columns?: Record<string, string[]>;
+        records?: SeedRecord[];
+      };
 
-    if (!Array.isArray(firstNames) || !Array.isArray(lastNames)) {
-      res
-        .status(400)
-        .json({ error: "firstNames and lastNames must be arrays" });
-      return;
-    }
+      const { seedRecords } = await import("../utils/seed/seeder");
 
-    if (firstNames.length === 0 && lastNames.length === 0) {
-      res.status(400).json({ error: "Name files are empty" });
-      return;
-    }
+      let parsed: { records: SeedRecord[]; warnings: string[] };
 
-    // Pair names by index
-    const maxLen = Math.max(firstNames.length, lastNames.length);
-    const pairs: { full_name: string; warned: boolean }[] = [];
-    const warnings: string[] = [];
+      switch (format) {
+        case "txt_pair":
+          if (!firstNames || !lastNames) {
+            res
+              .status(400)
+              .json({ error: "firstNames and lastNames are required" });
+            return;
+          }
+          parsed = parseTxtPair(firstNames.join("\n"), lastNames.join("\n"));
+          break;
 
-    for (let i = 0; i < maxLen; i++) {
-      const first = firstNames[i]?.trim();
-      const last = lastNames[i]?.trim();
-      if (!first || !last) {
-        warnings.push(
-          `Row ${i + 1}: missing ${!first ? "first" : "last"} name — filled with 'Unknown'`,
-        );
+        case "txt_columns":
+          if (!columns || typeof columns !== "object") {
+            res.status(400).json({ error: "columns object is required" });
+            return;
+          }
+          parsed = parseTxtColumns(
+            Object.fromEntries(
+              Object.entries(columns).map(([k, v]) => [k, v.join("\n")]),
+            ),
+          );
+          break;
+
+        case "txt_full":
+        case "csv":
+        case "json":
+        case "excel":
+          if (!records || !Array.isArray(records) || records.length === 0) {
+            res
+              .status(400)
+              .json({ error: "records array is required for this format" });
+            return;
+          }
+          parsed = { records, warnings: [] };
+          break;
+
+        default:
+          res.status(400).json({ error: `Unknown format: ${format}` });
+          return;
       }
-      pairs.push({
-        full_name: `${first ?? "Unknown"} ${last ?? "Unknown"}`,
-        warned: !first || !last,
+
+      if (parsed.records.length === 0) {
+        res
+          .status(400)
+          .json({ error: "No records to seed", warnings: parsed.warnings });
+        return;
+      }
+
+      const result = seedRecords(model.db, parsed.records, fillMissing);
+
+      res.status(201).json({
+        seeded: result.inserted,
+        skipped: result.skipped,
+        warnings: parsed.warnings.length > 0 ? parsed.warnings : undefined,
+        message: `Seeded ${result.inserted} employees (${result.skipped} skipped as duplicates)`,
       });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Seed failed";
+      res.status(500).json({ error: message });
     }
-
-    const seeded = model.seedFromPairs(pairs);
-
-    res.status(201).json({
-      seeded,
-      warnings: warnings.length > 0 ? warnings : undefined,
-      message: `Successfully seeded ${seeded} employees`,
-    });
   });
 
   return router;

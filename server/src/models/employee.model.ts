@@ -8,17 +8,16 @@ import type {
   CreateEmployeeInput,
   UpdateEmployeeInput,
 } from "../utils/validation";
-import { COUNTRIES, DEPARTMENTS, JOB_TITLES } from "../utils/seeding_data/data";
 
 export class EmployeeModel {
-  constructor(private db: Database.Database) {}
+  constructor(public db: Database.Database) {}
 
   findAll(filters: EmployeeFilters = {}): PaginatedEmployees {
     const {
       country,
       department,
       job_title,
-      status = "active",
+      status,
       search,
       page = 1,
       pageSize = 50,
@@ -186,92 +185,5 @@ export class EmployeeModel {
         )
         .all() as { job_title: string }[]
     ).map((r) => r.job_title);
-  }
-
-  seedFromPairs(pairs: { full_name: string; warned: boolean }[]): number {
-    // const { JOB_TITLES, DEPARTMENTS, COUNTRIES } =
-    //   require("../data/seeding_data/data") as {
-    //     JOB_TITLES: string[];
-    //     DEPARTMENTS: string[];
-    //     COUNTRIES: {
-    //       name: string;
-    //       salaryRange: [number, number];
-    //       currency: string;
-    //     }[];
-    //   };
-
-    function pick<T>(arr: T[]): T {
-      return arr[Math.floor(Math.random() * arr.length)];
-    }
-
-    function randInt(min: number, max: number): number {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-
-    function randDate(): string {
-      const y = randInt(2015, 2024);
-      const m = String(randInt(1, 12)).padStart(2, "0");
-      const d = String(randInt(1, 28)).padStart(2, "0");
-      return `${y}-${m}-${d}`;
-    }
-
-    function generateEmail(fullName: string, index: number): string {
-      const clean = fullName
-        .toLowerCase()
-        .replace(/\s+/g, ".")
-        .replace(/[^a-z.]/g, "");
-      const domains = [
-        "gmail.com",
-        "yahoo.com",
-        "outlook.com",
-        "company.io",
-        "work.co",
-      ];
-      return `${clean}.${index}@${pick(domains)}`;
-    }
-
-    const insert = this.db.prepare(`
-    INSERT OR IGNORE INTO employees
-      (full_name, email, job_title, department, country, salary, currency, hire_date, status)
-    VALUES
-      (@full_name, @email, @job_title, @department, @country, @salary, @currency, @hire_date, @status)
-  `);
-
-    const BATCH_SIZE = 500;
-    let inserted = 0;
-
-    const insertMany = this.db.transaction((rows: object[]) => {
-      for (const row of rows) insert.run(row);
-    });
-
-    let batch: object[] = [];
-
-    for (let i = 0; i < pairs.length; i++) {
-      const country = pick(COUNTRIES);
-      batch.push({
-        full_name: pairs[i].full_name,
-        email: generateEmail(pairs[i].full_name, i),
-        job_title: pick(JOB_TITLES),
-        department: pick(DEPARTMENTS),
-        country: country.name,
-        salary: randInt(...country.salaryRange),
-        currency: country.currency,
-        hire_date: randDate(),
-        status: Math.random() > 0.1 ? "active" : "inactive",
-      });
-
-      if (batch.length === BATCH_SIZE) {
-        insertMany(batch);
-        inserted += batch.length;
-        batch = [];
-      }
-    }
-
-    if (batch.length > 0) {
-      insertMany(batch);
-      inserted += batch.length;
-    }
-
-    return inserted;
   }
 }
