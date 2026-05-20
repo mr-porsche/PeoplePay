@@ -1,0 +1,142 @@
+name: peoplepay
+
+services:
+  # ── Application ─────────────────────────────────────────────────────────────
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    image: mrporsch3/peoplepay-server:latest
+    container_name: peoplepay-server
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      CLIENT_URL: http://localhost
+      DB_PATH: /data/peoplepay.db
+    volumes:
+      - db_data:/data
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD", "wget", "-q0-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - app
+      - monitoring
+
+  client:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    image: mrporsch3/peoplepay-client:latest
+    container_name: peoplepay-client
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT:
+        - "80:80"
+      depends_on:
+        server:
+          condition: server_healthy
+    networks:
+      - app
+
+  # ── Monitoring ─────────────────────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: peoplepay-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=prometheus"
+      - "--storage.tsdb.retention.timeout=30d"
+      - "--web.enable-lifecycle" # allows hot reload via POST /-/reload
+      - "--web.enable-admin-api"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "-q0-", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retention: 3
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: peoplepay-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_SERVER_ROOT_URL: http:/localhost:3000
+      GF_ALERTING_ENABLED: true
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "-q0-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retention: 3
+
+  alertmanager:
+    image: prom/alertmanager:V0.27.0
+    container_name: peoplepay-alertmanager
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+      - "--web.listen-address=:9093"
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - monitoring
+
+  node-exporter:
+    image: prom/node-exporter:V1.7.0
+    container_name: peoplepay-node-exporter
+    restart: unless-stopped
+    command:
+      - "--path.rootfs=/host"
+      - "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)"
+    volumes:
+      - /:/host:ro,rslave
+    ports:
+      - "9100:9100"
+    networks:
+      - monitoring
+
+# ── Networks ─────────────────────────────────────────────────────────────
+networks:
+  app:
+    driver: bridge
+  monitoring:
+    driver: bridge
+
+# ── Volumes ─────────────────────────────────────────────────────────────
+volumes:
+  db_data:
+  prometheus_data:
+  grafana_data:
+  alertmanager_data:
