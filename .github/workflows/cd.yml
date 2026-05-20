@@ -1,0 +1,11 @@
+name: CD
+
+on:
+  workflow_dispatch: # only runs when manually triggered — disabled for now
+
+jobs:
+  deploy:
+    name: Deploy (disabled — no server configured)
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "CD pipeline disabled until server is configured"
