@@ -1,0 +1,78 @@
+global:
+  resolve_timeout: 5m
+  # SMTP for email alerts
+  stmp_smarthost: "smtp.gmaill.com:587"
+  smtp_from: "alerts@peoplepay.io"
+  smtp_auth_username: "${ALERT_EMAIL}"
+  smtp_auth_password: "${ALERT_EMAIL_PASSWORD}"
+
+# ── Routing tree ──────────────────────────────────────────────────────────────
+route:
+  receiver: default-webhook
+  group_by: ["alertmanager", "severity"]
+  group_wait: 30s # wait 30s to batch alerts in same group
+  group_interval: 5m # send follow-up every 5m if still firing
+  repeat_interval: 4h # re-notify every 4h if still firing
+
+  routes:
+    # Critical alerts - Immediate webhook and email
+    - match:
+        severity: critical
+      receiver: critical-receiver
+      group_wait: 10s
+      repeat_interval: 1h
+
+    # Warning alerts - webhook
+    - match:
+        severity: warning
+      receiver: warning-receiver
+      repeat_interval: 4h
+
+    # Infra alerts - separate channel
+    - match:
+        team: infra
+      receiver: infra-receiver
+
+# ── Receivers ─────────────────────────────────────────────────────────────────
+receivers:
+  - name: default-webhook
+    webhook_configs:
+      - url: "http://host.docker.internal:9999/webhook"
+        send_resolved: true
+
+  - name: critical-receiver
+    webhook_configs:
+      - url: "http://host.docker.internal:9999/webhook"
+        send_resolved: true
+    email_configs:
+      - to: "${ALERT_EMAIL}"
+        send_resolved: true
+        headers:
+          Subject: "[CRITICAL] PeoplePay Alert: {{.GroupLabe;s.alertname}}"
+        body: |
+          {{range .Alerts}}
+          Alert: {{.Annotations.summary}}
+          Description: {{.Annotations.description}}
+          Runbook: {{.Annotations.runbook}}
+          Severity: {{.Labels.severity}}
+          Started: {{.StartsAt}}
+          {{end}}
+
+  - name: warning-receiver
+    webhook_configs:
+      - url: "http://host.docker.internal:9999/webhook"
+        send_resolved: true
+
+  - name: infra-receiver
+    webhook_configs:
+      - url: "http://host.docker.internal:9999/webhook"
+        send_resolved: true
+
+# ── Inhibition rules ──────────────────────────────────────────────────────────
+# Suppress warning if critical is already firing for the same alert
+inhibit_rules:
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: ["alertname", "instance"]

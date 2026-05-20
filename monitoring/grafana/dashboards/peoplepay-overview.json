@@ -1,0 +1,163 @@
+{
+  "title": "PeoplePay — Overview",
+  "uid": "peoplepay-overview",
+  "tags": ["peoplepay"],
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request Rate (req/s)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{app='peoplepay'}[5m]))",
+          "legendFormat": "req/s"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Error Rate (%)",
+      "type": "timeseries",
+      "gridPos": { "x": 8, "y": 0, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{app='peoplepay',status_code=~'5..'}[5m])) / sum(rate(http_requests_total{app='peoplepay'}[5m])) * 100",
+          "legendFormat": "error %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 20 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "p50 / p95 / p99 Latency",
+      "type": "timeseries",
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{app='peoplepay'}[5m])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{app='peoplepay'}[5m])) by (le))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{app='peoplepay'}[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Total Employees",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 8, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "expr": "employee_total{app='peoplepay'}",
+          "legendFormat": "employees"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Employee Operations Rate",
+      "type": "timeseries",
+      "gridPos": { "x": 4, "y": 8, "w": 10, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(employee_operations_total{app='peoplepay'}[5m])) by (operation)",
+          "legendFormat": "{{ operation }}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "CPU Usage %",
+      "type": "gauge",
+      "gridPos": { "x": 14, "y": 8, "w": 5, "h": 8 },
+      "targets": [
+        {
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)",
+          "legendFormat": "CPU %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 85 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Memory Usage %",
+      "type": "gauge",
+      "gridPos": { "x": 19, "y": 8, "w": 5, "h": 8 },
+      "targets": [
+        {
+          "expr": "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100",
+          "legendFormat": "Memory %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 75 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "HTTP Requests by Status Code",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{app='peoplepay'}[5m])) by (status_code)",
+          "legendFormat": "{{ status_code }}"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Requests by Route",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{app='peoplepay'}[5m])) by (route)",
+          "legendFormat": "{{ route }}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38
+}

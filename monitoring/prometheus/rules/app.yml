@@ -1,0 +1,144 @@
+groups:
+  # ── RED Method Alerts ────────────────────────────────────────────────────────
+  - name: peoplepay_api
+    interval: 30s
+    rules:
+      # Error rate > 5% for 2 mins → P2 alert
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{app="peoplepay", status_code=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{app="peoplepay"}[5m]))
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High error rate on PeoplePay API"
+          description: "Error rate is {{$value | humanizePercentage}} over the last 5 mins (threshold: 5%)"
+          runbook: "https://github.com/mr-porsche/PeoplePay/blob/main/docs/runbooks/high-error-rate.md"
+
+      # Error rate > 20% for 1 mins → P1 alert
+      - alert: CriticalErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{app="peoplepay", status_code=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{app="peoplepay"}[5m]))
+          ) > 0.20
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Critical error rate on PeoplePay API"
+          description: "Error rate is {{$value | humanizePercentage}} - immediate action required"
+          runbook: "https://github.com/mr-porsche/PeoplePay/blob/main/docs/runbooks/high-error-rate.md"
+
+      # P95 latency > 1s for 5 mins
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.85
+            sum(rate(http_requests_duration_seconds_bucket{app="peoplepay"}[5m])) by (le, route)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High P95 latency on {{$labels.route}}"
+          description: "P95 latency is {{$value | humanizePercentage}} on route {{$labels.route}}"
+          runbook: "https://github.com/mr-porsche/PeoplePay/blob/main/docs/runbooks/high-latency.md"
+
+      # API is completely down - no requests in 2 mins during business hrs.
+      - alert: APIDown
+        expr: absent(http_requests_total{app="peoplepay"})
+        for: 2m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "PeoplePay API is down"
+          description: "No metrics received from PeoplePay server for 2 mins."
+          runbook: "https://github.com/mr-porsche/PeoplePay/blob/main/docs/runbooks/api-down.md"
+
+  # ── System / Infrastructure Alerts (USE Method) ───────────────────────────
+  - name: system
+    interval: 30s
+    rules:
+      # CPU > 80% for 5 mins
+      - alert: HighCPU
+        expr: |
+          100 - (avg by(instance) (
+            rate(node_cpu_seconds_total{mode="idle"}[5m])
+          ) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "High CPU on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value | humanize }}% (threshold: 80%)"
+          runbook: "https://github.com/mr-porsche/PeoplePay/blob/main/docs/runbooks/high-cpu.md"
+
+      # Memory > 85%
+      - alert: HighMemory
+        expr: |
+          (
+            1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+          ) * 100 > 85
+        for: 4m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | humanize }}% (threshold: 85%)"
+          runbook: "https://github.com/mr-porsche/PeoplePay/blob/main/docs/runbooks/high-memory.md"
+
+      # Disk > 80%
+      - alert: DiskSpaceLow
+        expr: |
+          (
+            1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})
+          ) *100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk {{ $labels.mountpoint }} is {{ $value | humanize }}% full"
+          runbook: "https://github.com/mr-porsche/PeoplePay/blob/main/docs/runbooks/disk-space.md"
+
+      # Disk > 95% → critical
+      - alert: DiskSpaceCritical
+        expr: |
+          (
+            1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})
+          ) *100 > 95
+        for: 1m
+        labels:
+          severity: critical
+          team: infra
+        annotations:
+          summary: "Critical disk space on {{ $labels.instance }}"
+          description: "Disk {{ $labels.mountpoint }} is {{ $value | humanize }}% full — immediate action required"
+          runbook: "https://github.com/mr-porsche/PeoplePay/blob/main/docs/runbooks/disk-space.md"
+
+  # ── Business Metrics Alerts ───────────────────────────────────────────────
+  - name: business
+    rules:
+      # Seed operation failed
+      - alert: SeedOperationFailed
+        expr: increase(seed_operations_total{status="error"}[15m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Seed operation failed"
+          description: "{{ $value }} seed operation(s) failed in the last 15 minutes"
+          runbook: "https://github.com/mr-porsche/PeoplePay/blob/main/docs/runbooks/seed-failed.md"

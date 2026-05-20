@@ -1,0 +1,42 @@
+global:
+  scrape_interval: 15s            # scrape every 15 seconds
+  evaluation_interval: 15s        # evaluate alert rules every 15 seconds
+  evaluation_interval:
+    env: production
+    app: peoplepay
+
+# Alertmanager connection
+alerting:
+  alertmanagers:
+    - static_configs:
+      - targets: ['alertmanager:9093']
+
+# Load alert rules
+rule_files:
+  - rules/*.yml
+
+# Scrape configs
+scrape_configs:
+
+  # Prometheus
+  - job_name: Prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # PeoplePay API server
+  - job_name: peoplepay_server
+    static_configs:
+      - targets: ['server:3001']
+    metrics_path: /metrics
+    scrape_interval: 10s          # frequent for app metrics
+
+  # System metrics via Node Exporter
+  - job_name: node_exporter
+    static_configs:
+      - targets: ['node_exporter:9100']
+
+  # Grafana
+  - job_name: grafana
+    static_configs:
+      - targets: ['grafana:3000']
+    metrics_path: /metrics
