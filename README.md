@@ -28,6 +28,7 @@ PeoplePay allows HR Managers to:
 - View average salary by job title and department
 - View global summary stats — total employees, countries, departments, salary range
 - Toggle dark/light theme with persistent preference
+- Generate and seed realistic employee datasets for development and testing
 
 ---
 
@@ -53,38 +54,130 @@ PeoplePay allows HR Managers to:
 ---
 
 ```bash
-PeoplePay/
-├── shared/                        # Shared TypeScript types
-│   └── src/
-│       └── types.ts
+peoplepay/
+├── shared/                           # Shared TypeScript types
+│ ├── src/
+│ │ └── types.ts
+│ ├── package.json
+│ └── tsconfig.json
 │
-├── server/                        # Express + TypeScript backend
-│   ├── src/
-│   │   ├── db/                    # Database connection and migrations
-│   │   ├── models/                # Class-based data access layer
-│   │   ├── routes/                # Express route factory functions
-│   │   └── utils/                 # Zod schemas for input validation
-│   ├── tests/                     # Vitest + Supertest integration tests
-│   ├── data/                      # SQLite database (gitignored)
-│   ├── .env.example
-│   └── package.json
 │
-├── client/                        # React + Vite frontend
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── employees/         # EmployeeTable, Filters, Pagination, Header
-│   │   │   ├── insights/          # StatCard, SalaryBarChart, CountryStatsTable, DepartmentChart
-│   │   │   ├── EmployeeForm.tsx   # Add/Edit modal form
-│   │   │   ├── Layout.tsx         # Sidebar layout with dark mode toggle
-│   │   │   └── Logo.tsx
-│   │   ├── hooks/                 # useTheme
-│   │   ├── lib/                   # api.ts, utils.ts
-│   │   ├── pages/                 # OverviewPage, EmployeesPage, InsightsDashboard
-│   │   └── test/                  # Vitest setup
-│   └── package.json
+├── server/                           # Express + TypeScript backend API
+│ ├── scripts/
+│ │ └── seed.ts                       # Database seeding script
+│ │
+│ ├── src/
+│ │ ├── db/
+│ │ │ ├── database.ts                 # SQLite database connection/configuration
+│ │ │ └── migrations.ts               # Database schema migrations
+│ │ │
+│ │ ├── models/                       # Business/Database logic
+│ │ │ ├── employeeModel.ts            # Employee CRUD operations
+│ │ │ └── insightsModel.ts            # Aggregated analytics/insights queries
+│ │ │
+│ │ ├── routes/                       # Express route handlers
+│ │ │ ├── employees.ts                # Employee-related API endpoints
+│ │ │ └── insights.ts                 # Insights/dashboard API endpoints
+│ │ │
+│ │ ├── utils/                        # Utility helpers and validation logic
+│ │ │ ├── seeding_data/               # Raw/mock data used for database seeding
+│ │ │ │ ├── data.ts                   # Seed dataset generator/helpers
+│ │ │ │ ├── first_name.txt            # First names source list
+│ │ │ │ ├── last_name.txt             # Last names source list
+│ │ │ │ └── parse.ts                  # Parsing utilities for seed files
+│ │ │ └── validation.ts               # Zod validation schemas
+│ │ │
+│ │ ├── app.ts                        # Express app configuration/middleware
+│ │ └── index.ts                      # Backend entry point/server bootstrap
+│ │
+│ ├── tests/                          # Vitest backend tests
+│ │ ├── employee.model.test.ts
+│ │ ├── employee.routes.test.ts
+│ │ ├── insights.test.ts
+│ │ ├── migration.test.ts
+│ │ └── seed.test.ts
+│ │
+│ ├── .env                            # Environment variables (local only)
+│ ├── .env.example
+│ ├── package.json
+│ ├── tsconfig.json
+│ └── vitest.config.ts
 │
-├── docs/                    # Architecture notes and planning artifacts
-└── README.md
+│
+├── client/                           # React + Vite frontend application
+│ ├── src/
+│ │ ├── components/                   # Reusable UI components
+│ │ │
+│ │ │ ├── __tests__/                  # Shared component tests
+│ │ │ │ └── EmployeeForm.test.tsx     # Employee form component tests
+│ │ │ │
+│ │ │ ├── employees/                  # Employee management feature components
+│ │ │ │
+│ │ │ │ ├── __tests__/                # Employee feature component tests
+│ │ │ │ │ ├── EmployeesFilters.test.tsx # Filters component tests
+│ │ │ │ │ ├── EmployeesTable.test.tsx # Employee table tests
+│ │ │ │ │ ├── Pagination.test.tsx    # Pagination component tests
+│ │ │ │ │ └── SeedUploader.test.tsx  # Seed upload component tests
+│ │ │ │ │
+│ │ │ │ ├── Filters.tsx              # Employee filtering UI
+│ │ │ │ ├── Pagination.tsx           # Pagination controls
+│ │ │ │ ├── SeedUploader.tsx         # Upload/import seed data component
+│ │ │ │ ├── Table.tsx                # Employee data table
+│ │ │ │ └── TableHeader.tsx          # Table column headers/sorting UI
+│ │ │ │
+│ │ │ ├── insights/                  # Dashboard and analytics components
+│ │ │ │
+│ │ │ │ ├── __tests__/               # Insights component tests
+│ │ │ │ │ ├── CountryStats.test.tsx
+│ │ │ │ │ └── StatCard.test.tsx
+│ │ │ │ │
+│ │ │ │ ├── CountryStats.tsx         # Country-wise employee stats table
+│ │ │ │ ├── DepartmentStats.tsx      # Department analytics component
+│ │ │ │ ├── SalaryBarChart.tsx       # Salary visualization chart
+│ │ │ │ ├── StatCard.tsx             # KPI/statistic display card
+│ │ │ │ ├── AppLayout.tsx            # Dashboard layout wrapper
+│ │ │ │ ├── DepartmentChart.tsx      # Department distribution chart
+│ │ │ │ ├── SalaryBarChart.tsx       # Salary comparison chart
+│ │ │ │ └── StatCard.tsx             # Reusable stat display component
+│ │ │ │
+│ │ │ ├── AppLayout.tsx              # Main application layout/navigation
+│ │ │ ├── EmployeeForm.tsx           # Add/Edit employee modal form
+│ │ │ └── Logo.tsx                   # Brand/logo component
+│ │ │
+│ │ ├── hooks/                       # Custom React hooks
+│ │ │ ├── __tests__/                 # Hook tests
+│ │ │ │ └── useTheme.test.ts
+│ │ │ └── useTheme.ts                # Dark/light theme management hook
+│ │ │
+│ │ ├── lib/                         # Shared frontend utilities/services
+│ │ │ ├── api.tsx                    # API client and request handlers
+│ │ │ └── utils.tsx                  # General utility/helper functions
+│ │ │
+│ │ ├── pages/                       # Route-level page components
+│ │ │ ├── EmployeesPage.tsx          # Employee management page
+│ │ │ ├── InsightDashboard.tsx       # Analytics dashboard page
+│ │ │ └── OverviewPage.tsx           # Application overview/home page
+│ │ │
+│ │ ├── test/
+│ │ │ └── setup/.ts                  # Frontend test setup/configuration
+│ │ │
+│ │ ├── App.tsx                      # Root React application component
+│ │ ├── index.css                    # Global application styles
+│ │ └── main.tsx                     # Frontend application entry point
+│ │
+│ ├── .gitignore
+│ ├── eslint.config.js
+│ ├── index.html
+│ ├── package.json
+│ ├── tsconfig.app.json
+│ ├── tsconfig.json
+│ ├── tsconfig.node.json
+│ └── vite.config.ts
+│
+│
+├── .gitignore
+├── package.json                     # Root workspace/monorepo configuration
+└── README.md                        # Project setup, usage, and documentation
 ```
 
 ---
@@ -132,6 +225,20 @@ Health check:
 GET http://localhost:3001/health
 ```
 
+### Seed the database
+
+Populate SQLite with generated employee records:
+
+```bash
+npm run seed
+```
+
+Wipe and reseed:
+
+```bash
+npm run seed:fresh
+```
+
 ### Start frontend (client)
 
 ```bash
@@ -174,20 +281,24 @@ npm run test:client
 
 ### Current test coverage
 
-| Package   | Test File                  | Tests  | Description                         |
-| --------- | -------------------------- | ------ | ----------------------------------- |
-| server    | `migrations.test.ts`       | 5      | Schema, indexes, constraints        |
-| server    | `employee.model.test.ts`   | 20     | Class-based model CRUD + helpers    |
-| server    | `employee.routes.test.ts`  | 15     | API integration tests via Supertest |
-| server    | `insights.test.ts`         | 6      | Salary analytics endpoints          |
-| client    | `EmployeeTable.test.tsx`   | 5      | Table render, empty, loading states |
-| client    | `Pagination.test.tsx`      | 6      | Pagination controls and callbacks   |
-| client    | `EmployeeFilters.test.tsx` | 5      | Filter inputs and reset behaviour   |
-| client    | `EmployeeForm.test.tsx`    | 6      | Form render, validation, pre-fill   |
-| client    | `StatCard.test.tsx`        | 3      | Stat card render with icon and note |
-| client    | `CountryStats.test.tsx`    | 4      | Country stats table render          |
-| client    | `useTheme.test.ts`         | 5      | Dark mode toggle and localStorage   |
-| **Total** |                            | **80** |                                     |
+| Package   | Test File                  | Tests   | Description                                           |
+| --------- | -------------------------- | ------- | ----------------------------------------------------- |
+| server    | `migrations.test.ts`       | 5       | Database schema, indexes, and migration constraints   |
+| server    | `employee.model.test.ts`   | 20      | Employee model CRUD operations and helper methods     |
+| server    | `employee.routes.test.ts`  | 15      | Employee API integration tests using Supertest        |
+| server    | `insights.test.ts`         | 6       | Insights aggregation and analytics endpoint tests     |
+| server    | `seed.generator.test.ts`   | 7       | Random employee seed data generation utilities        |
+| server    | `seed.parser.test.ts`      | 23      | Seed file parsing, validation, and truncation logic   |
+| server    | `seed.seeder.test.ts`      | 6       | Database seeding workflow and insertion verification  |
+| client    | `EmployeeTable.test.tsx`   | 5       | Employee table rendering and state handling           |
+| client    | `Pagination.test.tsx`      | 6       | Pagination controls and callback interactions         |
+| client    | `EmployeeFilters.test.tsx` | 5       | Employee filter inputs and reset behaviour            |
+| client    | `SeedUploader.test.tsx`    | 9       | CSV/seed upload interactions and validation states    |
+| client    | `EmployeeForm.test.tsx`    | 6       | Form rendering, validation, and edit pre-fill support |
+| client    | `StatCard.test.tsx`        | 3       | Statistics card rendering and props handling          |
+| client    | `CountryStats.test.tsx`    | 4       | Country statistics table rendering                    |
+| client    | `useTheme.test.ts`         | 5       | Dark mode toggle and localStorage persistence         |
+| **Total** |                            | **125** |                                                       |
 
 ---
 
@@ -203,6 +314,12 @@ npm run test:client
 | POST   | `/api/employees`      | Create a new employee                   |
 | PATCH  | `/api/employees/:id`  | Update an employee                      |
 | DELETE | `/api/employees/:id`  | Delete an employee                      |
+
+### Seed Endpoint
+
+| Method | Endpoint              | Description                               |
+| ------ | --------------------- | ----------------------------------------- |
+| POST   | `/api/employees/seed` | Generate and insert mock employee records |
 
 **Query parameters for `GET /api/employees`:**
 
@@ -225,7 +342,7 @@ npm run test:client
 | GET    | `/api/insights/summary`           | Global employee and salary stats                |
 | GET    | `/api/insights/country-stats`     | Salary stats with percentiles per country       |
 | GET    | `/api/insights/job-title-stats`   | Salary stats by job title (optional `country`)  |
-| GET    | `/api/insights/department-statst` | Salary stats by department (optional `country`) |
+| GET    | `/api/insights/department-statts` | Salary stats by department (optional `country`) |
 
 ---
 
@@ -258,10 +375,11 @@ Commits will follow the below **Conventional Commits** format afterwards for eve
 - **Zod validation** on all inputs — schema-first, type-safe from request to DB
 - **TanStack Query** — server state, caching, and invalidation on mutations
 - **Reusable component blocks** — pages are thin orchestrators, components are independent
+- **Dedicated seed pipeline** — parser, generator, and seeder utilities are isolated and independently testable
 
 ---
 
 ## Upcoming
 
-- Seed script — bulk insert 10,000 employees from name lists with high-performance batching
+- DevOps — Docker, GitHub Actions CI, Prometheus + Grafana monitoring
 - Currency conversion — convert multi-currency salaries to a common base for stats

@@ -1,9 +1,9 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AppLayout } from './components/AppLayout';
-import { OverviewPage } from './pages/OverviewPage';
-import { EmployeesPage } from './pages/EmployeesPage';
-import { InsightsDashboard } from './pages/InsightsDashboard';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AppLayout } from "./components/AppLayout";
+import { OverviewPage } from "./pages/OverviewPage";
+import { EmployeesPage } from "./pages/EmployeesPage";
+import { InsightsDashboard } from "./pages/InsightsDashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {

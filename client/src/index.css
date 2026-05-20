@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @theme {
   --color-border: hsl(var(--border));
@@ -66,5 +66,9 @@
   body {
     @apply bg-background text-foreground;
     font-family: system-ui, sans-serif;
+  }
+
+  button {
+    cursor: pointer;
   }
 }
