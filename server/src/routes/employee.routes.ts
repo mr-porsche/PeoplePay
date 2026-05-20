@@ -10,6 +10,11 @@ import {
   parseTxtPair,
   parseTxtColumns,
 } from "../utils/seed/parser";
+import {
+  employeeOperationsTotal,
+  seedOperationsTotal,
+  seedRecordsTotal,
+} from "../observability/metrics";
 
 export function employeeRouter(model: EmployeeModel): Router {
   const router = Router();
@@ -48,6 +53,7 @@ export function employeeRouter(model: EmployeeModel): Router {
 
   router.post("/", (req: Request, res: Response) => {
     const parsed = CreateEmployeeSchema.safeParse(req.body);
+
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.flatten() });
       return;
@@ -61,6 +67,7 @@ export function employeeRouter(model: EmployeeModel): Router {
 
     const employee = model.create(parsed.data);
     res.status(201).json({ data: employee });
+    employeeOperationsTotal.inc({ operation: "create" });
   });
 
   router.patch("/:id", (req: Request<{ id: string }>, res: Response) => {
@@ -82,6 +89,7 @@ export function employeeRouter(model: EmployeeModel): Router {
       return;
     }
     res.json({ data: employee });
+    employeeOperationsTotal.inc({ operation: "update" });
   });
 
   router.delete("/:id", (req: Request<{ id: string }>, res: Response) => {
@@ -97,6 +105,7 @@ export function employeeRouter(model: EmployeeModel): Router {
       return;
     }
     res.status(204).send();
+    employeeOperationsTotal.inc({ operation: "delete" });
   });
 
   // POST /api/employees/seed
@@ -178,9 +187,16 @@ export function employeeRouter(model: EmployeeModel): Router {
         warnings: parsed.warnings.length > 0 ? parsed.warnings : undefined,
         message: `Seeded ${result.inserted} employees (${result.skipped} skipped as duplicates)`,
       });
+
+      seedOperationsTotal.inc({ format, status: "success" });
+      seedRecordsTotal.inc({ format }, result.inserted);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Seed failed";
       res.status(500).json({ error: message });
+      seedOperationsTotal.inc({
+        format: req.body?.format ?? "unknown",
+        status: "error",
+      });
     }
   });
 
