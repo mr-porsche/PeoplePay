@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import * as XLSX from 'xlsx';
 
 export const MAX_RECORDS = 15_000;
 
@@ -13,7 +13,7 @@ export interface SeedRecord {
   salary?: number;
   currency?: string;
   hire_date?: string;
-  status?: "active" | "inactive";
+  status?: 'active' | 'inactive';
 }
 
 export interface ParseResult {
@@ -25,7 +25,7 @@ export interface ParseResult {
 
 function lines(content: string): string[] {
   return content
-    .split("\n")
+    .split('\n')
     .map((l) => l.trim())
     .filter(Boolean);
 }
@@ -40,17 +40,15 @@ function cap(arr: SeedRecord[], warn: string[]): ParseResult {
   return { records: arr, warnings: warn };
 }
 
-function normaliseSalary(raw: string | undefined): number | undefined {
+function normalizeSalary(raw: string | undefined): number | undefined {
   if (!raw) return undefined;
-  const n = Number(raw.replace(/[^0-9.]/g, ""));
+  const n = Number(raw.replace(/[^0-9.]/g, ''));
   return isNaN(n) ? undefined : n;
 }
 
-function normaliseStatus(
-  raw: string | undefined,
-): "active" | "inactive" | undefined {
+function normalizeStatus(raw: string | undefined): 'active' | 'inactive' | undefined {
   if (!raw) return undefined;
-  return raw.trim().toLowerCase() === "inactive" ? "inactive" : "active";
+  return raw.trim().toLowerCase() === 'inactive' ? 'inactive' : 'active';
 }
 
 /**
@@ -62,38 +60,31 @@ function mapRow(row: Record<string, string>): SeedRecord {
     for (const alias of aliases) {
       const key = Object.keys(row).find(
         (k) =>
-          k.toLowerCase().replace(/[\s_\-]/g, "") ===
-          alias.toLowerCase().replace(/[\s_\-]/g, ""),
+          k.toLowerCase().replace(/[\s_-]/g, '') === alias.toLowerCase().replace(/[\s_-]/g, ''),
       );
       if (key && row[key]?.trim()) return row[key].trim();
     }
     return undefined;
   };
 
-  const firstName = get("firstname", "first_name", "first");
-  const lastName = get("lastname", "last_name", "last");
+  const firstName = get('firstname', 'first_name', 'first');
+  const lastName = get('lastname', 'last_name', 'last');
   const fullName =
-    get("fullname", "full_name", "name") ??
+    get('fullname', 'full_name', 'name') ??
     (firstName && lastName ? `${firstName} ${lastName}` : undefined);
 
   return {
     full_name: fullName,
     first_name: firstName,
     last_name: lastName,
-    email: get("email", "emailaddress", "mail"),
-    job_title: get("jobtitle", "job_title", "title", "position", "role"),
-    department: get("department", "dept", "team", "division"),
-    country: get("country", "location", "region"),
-    salary: normaliseSalary(get("salary", "pay", "compensation")),
-    currency: get("currency", "curr"),
-    hire_date: get(
-      "hiredate",
-      "hire_date",
-      "startdate",
-      "start_date",
-      "joined",
-    ),
-    status: normaliseStatus(get("status", "employmentstatus")),
+    email: get('email', 'emailaddress', 'mail'),
+    job_title: get('jobtitle', 'job_title', 'title', 'position', 'role'),
+    department: get('department', 'dept', 'team', 'division'),
+    country: get('country', 'location', 'region'),
+    salary: normalizeSalary(get('salary', 'pay', 'compensation')),
+    currency: get('currency', 'curr'),
+    hire_date: get('hiredate', 'hire_date', 'startdate', 'start_date', 'joined'),
+    status: normalizeStatus(get('status', 'employmentstatus')),
   };
 }
 
@@ -103,10 +94,7 @@ function mapRow(row: Record<string, string>): SeedRecord {
  * A: Two separate name files — paired by line index.
  * first_names.txt + last_names.txt
  */
-export function parseTxtPair(
-  firstContent: string,
-  lastContent: string,
-): ParseResult {
+export function parseTxtPair(firstContent: string, lastContent: string): ParseResult {
   const firsts = lines(firstContent);
   const lasts = lines(lastContent);
   const maxLen = Math.max(firsts.length, lasts.length);
@@ -126,9 +114,9 @@ export function parseTxtPair(
     if (!first) warn.push(`Row ${i + 1}: missing first name — used 'Unknown'`);
     if (!last) warn.push(`Row ${i + 1}: missing last name  — used 'Unknown'`);
     records.push({
-      first_name: first ?? "Unknown",
-      last_name: last ?? "Unknown",
-      full_name: `${first ?? "Unknown"} ${last ?? "Unknown"}`,
+      first_name: first ?? 'Unknown',
+      last_name: last ?? 'Unknown',
+      full_name: `${first ?? 'Unknown'} ${last ?? 'Unknown'}`,
     });
   }
 
@@ -150,10 +138,10 @@ export function parseTxtColumns(files: Record<string, string>): ParseResult {
   const warn: string[] = [];
   const records: SeedRecord[] = [];
 
-  if (!columns["first_name"] && !columns["full_name"]) {
+  if (!columns['first_name'] && !columns['full_name']) {
     return {
       records: [],
-      warnings: ["first_name.txt or full_name.txt is required"],
+      warnings: ['first_name.txt or full_name.txt is required'],
     };
   }
 
@@ -165,26 +153,24 @@ export function parseTxtColumns(files: Record<string, string>): ParseResult {
   }
 
   for (let i = 0; i < limit; i++) {
-    const first = columns["first_name"]?.[i]?.trim();
-    const last = columns["last_name"]?.[i]?.trim();
+    const first = columns['first_name']?.[i]?.trim();
+    const last = columns['last_name']?.[i]?.trim();
     const fullName =
-      columns["full_name"]?.[i]?.trim() ??
-      (first && last
-        ? `${first} ${last}`
-        : `${first ?? "Unknown"} ${last ?? "Unknown"}`);
+      columns['full_name']?.[i]?.trim() ??
+      (first && last ? `${first} ${last}` : `${first ?? 'Unknown'} ${last ?? 'Unknown'}`);
 
     records.push({
       full_name: fullName,
       first_name: first,
       last_name: last,
-      email: columns["email"]?.[i]?.trim() || undefined,
-      job_title: columns["job_title"]?.[i]?.trim() || undefined,
-      department: columns["department"]?.[i]?.trim() || undefined,
-      country: columns["country"]?.[i]?.trim() || undefined,
-      salary: normaliseSalary(columns["salary"]?.[i]),
-      currency: columns["currency"]?.[i]?.trim() || undefined,
-      hire_date: columns["hire_date"]?.[i]?.trim() || undefined,
-      status: normaliseStatus(columns["status"]?.[i]),
+      email: columns['email']?.[i]?.trim() || undefined,
+      job_title: columns['job_title']?.[i]?.trim() || undefined,
+      department: columns['department']?.[i]?.trim() || undefined,
+      country: columns['country']?.[i]?.trim() || undefined,
+      salary: normalizeSalary(columns['salary']?.[i]),
+      currency: columns['currency']?.[i]?.trim() || undefined,
+      hire_date: columns['hire_date']?.[i]?.trim() || undefined,
+      status: normalizeStatus(columns['status']?.[i]),
     });
   }
 
@@ -203,9 +189,7 @@ export function parseTxtFull(content: string): ParseResult {
   const records: SeedRecord[] = [];
 
   // Skip header if present
-  const start = rawLines[0]?.toLowerCase().replace(/\s/g, "").includes("name")
-    ? 1
-    : 0;
+  const start = rawLines[0]?.toLowerCase().replace(/\s/g, '').includes('name') ? 1 : 0;
   const data = rawLines.slice(start);
 
   for (let i = 0; i < Math.min(data.length, MAX_RECORDS); i++) {
@@ -225,7 +209,7 @@ export function parseTxtFull(content: string): ParseResult {
       continue;
     }
 
-    if (parts.length === 2 && !parts[1].includes("@")) {
+    if (parts.length === 2 && !parts[1].includes('@')) {
       // Two tokens, second is not email — treat as first + last name
       records.push({
         full_name: `${parts[0]} ${parts[1]}`,
@@ -243,10 +227,10 @@ export function parseTxtFull(content: string): ParseResult {
       job_title: parts[2] || undefined,
       department: parts[3] || undefined,
       country: parts[4] || undefined,
-      salary: normaliseSalary(salaryRaw),
+      salary: normalizeSalary(salaryRaw),
       currency: parts[6] || undefined,
       hire_date: parts[7] || undefined,
-      status: normaliseStatus(parts[8]),
+      status: normalizeStatus(parts[8]),
     });
   }
 
@@ -263,25 +247,20 @@ export function parseTxtFull(content: string): ParseResult {
  * CSV: comma-separated with header row.
  */
 export function parseCsv(content: string): ParseResult {
-  const rawLines = content.split("\n").filter((l) => l.trim());
-  if (rawLines.length < 2)
-    return { records: [], warnings: ["CSV has no data rows"] };
+  const rawLines = content.split('\n').filter((l) => l.trim());
+  if (rawLines.length < 2) return { records: [], warnings: ['CSV has no data rows'] };
 
-  const headers = rawLines[0]
-    .split(",")
-    .map((h) => h.trim().replace(/^"|"$/g, ""));
+  const headers = rawLines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, ''));
   const warn: string[] = [];
   const records: SeedRecord[] = [];
 
   const dataLines = rawLines.slice(1);
 
   for (let i = 0; i < Math.min(dataLines.length, MAX_RECORDS); i++) {
-    const vals = dataLines[i]
-      .split(",")
-      .map((v) => v.trim().replace(/^"|"$/g, ""));
+    const vals = dataLines[i].split(',').map((v) => v.trim().replace(/^"|"$/g, ''));
     const row: Record<string, string> = {};
     headers.forEach((h, idx) => {
-      row[h] = vals[idx] ?? "";
+      row[h] = vals[idx] ?? '';
     });
     records.push(mapRow(row));
   }
@@ -305,20 +284,17 @@ export function parseJson(content: string): ParseResult {
   try {
     raw = JSON.parse(content);
   } catch {
-    return { records: [], warnings: ["Invalid JSON — could not parse file"] };
+    return { records: [], warnings: ['Invalid JSON — could not parse file'] };
   }
 
   const rows: Record<string, string>[] = Array.isArray(raw)
     ? (raw as Record<string, string>[])
-    : (((raw as Record<string, unknown>).data ?? []) as Record<
-        string,
-        string
-      >[]);
+    : (((raw as Record<string, unknown>).data ?? []) as Record<string, string>[]);
 
   if (!Array.isArray(rows) || rows.length === 0) {
     return {
       records: [],
-      warnings: ["JSON must be a non-empty array or { data: [] }"],
+      warnings: ['JSON must be a non-empty array or { data: [] }'],
     };
   }
 
@@ -341,13 +317,13 @@ export function parseExcel(buffer: Buffer): ParseResult {
   let rows: Record<string, string>[];
 
   try {
-    const wb = XLSX.read(buffer, { type: "buffer" });
+    const wb = XLSX.read(buffer, { type: 'buffer' });
     const sheet = wb.Sheets[wb.SheetNames[0]];
     rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, {
-      defval: "",
+      defval: '',
     });
   } catch {
-    return { records: [], warnings: ["Could not read Excel file"] };
+    return { records: [], warnings: ['Could not read Excel file'] };
   }
 
   if (rows.length > MAX_RECORDS) {
