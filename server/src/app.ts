@@ -1,30 +1,29 @@
-import express from "express";
-import cors from "cors";
-import { getDb } from "./db/database";
-import { EmployeeModel } from "./models/employee.model";
-import { InsightsModel } from "./models/insights.model";
-import { employeeRouter } from "./routes/employee.routes";
-import { insightsRouter } from "./routes/insights.routes";
-import { metricsMiddleware } from "./observability/middleware";
-import { timeStamp } from "node:console";
-import { register } from "./observability/metrics";
+import express from 'express';
+import cors from 'cors';
+import { getDb } from './db/database';
+import { EmployeeModel } from './models/employee.model';
+import { InsightsModel } from './models/insights.model';
+import { employeeRouter } from './routes/employee.routes';
+import { insightsRouter } from './routes/insights.routes';
+import { metricsMiddleware } from './observability/middleware';
+import { register } from './observability/metrics';
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_URL ?? "http://localhost:5173" }));
+app.use(cors({ origin: process.env.CLIENT_URL ?? 'http://localhost:5173' }));
 app.use(express.json());
 
 // ── Metrics middleware (before routes) ────────────────────────────────────────
 app.use(metricsMiddleware);
 
 // ── Health check ──────────────────────────────────────────────────────────────
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", timeStamp: new Date().toISOString() });
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', timeStamp: new Date().toISOString() });
 });
 
 // ── Prometheus metrics endpoint ───────────────────────────────────────────────
-app.get("/metrics", async (_req, res) => {
-  res.set("Content-Type", register.contentType);
+app.get('/metrics', async (_req, res) => {
+  res.set('Content-Type', register.contentType);
   res.end(await register.metrics());
 });
 
@@ -33,7 +32,7 @@ const db = getDb();
 const employeeModel = new EmployeeModel(db);
 const insightsModel = new InsightsModel(db);
 
-app.use("/api/employees", employeeRouter(employeeModel));
-app.use("/api/insights", insightsRouter(insightsModel));
+app.use('/api/employees', employeeRouter(employeeModel));
+app.use('/api/insights', insightsRouter(insightsModel));
 
 export default app;

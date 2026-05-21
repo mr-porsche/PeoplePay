@@ -2,6 +2,7 @@
   "name": "peoplepay",
   "private": true,
   "version": "1.0.0",
+  "type": "module",
   "workspaces": [
     "client",
     "server",
@@ -19,5 +20,14 @@
     "format": "prettier --write .",
     "seed": "npm run seed --workspace=server",
     "seed:fresh": "npm run seed:fresh --workspace=server"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.4",
+    "@eslint/js": "^9.39.4",
+    "typescript-eslint": "^8.59.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.3"
   }
 }

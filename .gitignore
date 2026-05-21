@@ -28,4 +28,3 @@ coverage/
 *.db-journal
 .env
 .env.*
-package-lock.json
