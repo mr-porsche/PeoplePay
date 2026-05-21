@@ -7,15 +7,16 @@
  * that tell the on-call engineer exactly what to do.
  */
 
-import { fs } from "fs";
-import http from "http";
-import path from "path";
-import { fileURLToPath } from "url";
+import { exec } from 'child_process';
+import { fs } from 'fs';
+import http from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const LOG_FILE = path.join(__dirname, "../logs/alerts.log");
+const LOG_FILE = path.join(__dirname, '../logs/alerts.log');
 
-fs.mkdirSync(path.join(__dirname, "../logs"), { recursive: true });
+fs.mkdirSync(path.join(__dirname, '../logs'), { recursive: true });
 
 function log(msg) {
   const line = `[${new Date().toISOString()}] ${msg}\n`;
@@ -43,30 +44,30 @@ function runRunbook(alertName, severity) {
 }
 
 const server = http.createServer((req, res) => {
-  if (req.method !== "POST" || req.url !== "/webhook") {
+  if (req.method !== 'POST' || req.url !== '/webhook') {
     res.writeHead(404);
     res.end();
     return;
   }
 
-  let body = "";
-  req.on("data", (chunk) => {
+  let body = '';
+  req.on('data', (chunk) => {
     body += chunk;
   });
-  req.on("end", () => {
+  req.on('end', () => {
     try {
       const payload = JSON.parse(body);
 
       for (const alert of payload.alerts ?? []) {
-        const alertName = alert.labels?.alertname ?? "Unknown";
-        const severity = alert.labels?.severity ?? "unknown";
+        const alertName = alert.labels?.alertname ?? 'Unknown';
+        const severity = alert.labels?.severity ?? 'unknown';
         const status = alert.status; // firing | resolved
 
         log(
-          `Alert ${status.toUpperCase()}: ${alertName} [${severity}] — ${alert.annotations?.summary ?? ""}`,
+          `Alert ${status.toUpperCase()}: ${alertName} [${severity}] — ${alert.annotations?.summary ?? ''}`,
         );
 
-        if (status === "firing") {
+        if (status === 'firing') {
           runRunbook(alertName, severity);
         } else {
           log(`Alert resolved: ${alertName}`);
@@ -74,15 +75,15 @@ const server = http.createServer((req, res) => {
       }
 
       res.writeHead(200);
-      res.end("ok");
+      res.end('ok');
     } catch (e) {
       log(`Failed to parse webhook payload: ${e.message}`);
       res.writeHead(400);
-      res.end("bad request");
+      res.end('bad request');
     }
   });
 });
 
 server.listen(9999, () => {
-  log("Webhook server listening on :9999");
+  log('Webhook server listening on :9999');
 });
