@@ -24,7 +24,7 @@ function log(msg) {
   fs.appendFileSync(LOG_FILE, line);
 }
 
-function runRunbook(alertName, severity) {
+function runRunbook(alertName, _severity) {
   const script = path.join(__dirname, `runbooks/${alertName}.sh`);
 
   if (!fs.existsSync(script)) {
