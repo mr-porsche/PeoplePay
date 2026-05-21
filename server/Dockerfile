@@ -38,7 +38,7 @@ COPY --from=builder /app/server/node_modules ./server/node_modules/
 COPY server/package.json ./server/
 
 # Copy seed data
-COPY server/src/utils/seed/data ./server/src/utils/seed/data
+COPY server/data ./server/data
 
 # Create data directory for SQLite
 RUN mkdir -p /data && chown peoplepay:peoplepay /data
@@ -48,7 +48,7 @@ USER peoplepay
 WORKDIR /app/server
 
 ENV NODE_ENV=production
-ENV DB_PATH=/data/peoplepay.DB_PATH
+ENV DB_PATH=/data/peoplepay.db
 ENV PORT=3011
 
 EXPOSE 3001

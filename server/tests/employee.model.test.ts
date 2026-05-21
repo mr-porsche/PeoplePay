@@ -3,7 +3,7 @@ import { getDb, closeDb, resetDb } from '../src/db/database';
 import { runMigrations } from '../src/db/migrations';
 import { EmployeeModel } from '../src/models/employee.model';
 
-process.env.DB_PATH = './src/utils/seed/data/test-employee-model.db';
+process.env.DB_PATH = './data/test-employee-model.db';
 
 const sample = {
   full_name: 'Jane Doe',
