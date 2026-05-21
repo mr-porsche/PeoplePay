@@ -9,13 +9,29 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   prettierConfig,
+
+  // Global language setting
   {
-    files: ['client/src/**/*.{ts,tsx}'],
+    files: ['**/*.{js,ts,tsx}'],
     languageOptions: {
       globals: {
         ...globals.node,
       },
     },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+
+  // Frontend Rules
+  {
+    files: ['client/src/**/*.{ts,tsx}'],
     plugins: {
       react: reactPlugin,
       'react-hooks': reactHooks,
@@ -29,12 +45,16 @@ export default tseslint.config(
       react: { version: 'detect' },
     },
   },
+
+  //Backend Rules
   {
     files: ['server/src/**/*.ts', 'server/tests/**/*.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
+
+  // Ignore File/Folders
   {
     ignores: ['**/node_modules/**', '**/dist/**', '**/data/**', '**/coverage/**'],
   },
