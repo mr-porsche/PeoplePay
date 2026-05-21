@@ -7,6 +7,9 @@ WORKDIR /app
 COPY shared/package.json ./shared/
 COPY shared/src ./shared/src/
 
+# Copy root workspace manifests
+COPY package.json package-lock.json ./
+
 # Copy server package files
 COPY server/package*.json ./server/
 
