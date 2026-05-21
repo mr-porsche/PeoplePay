@@ -1,11 +1,14 @@
 # ── Stage 1: Build React app ──────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
 # Copy shared types
 COPY shared/package.json ./shared/
-COPY shared/src           ./shared/src/
+COPY shared/src ./shared/src/
+
+# Copy root workspace manifests
+COPY package.json package-lock.json ./
 
 # Copy client
 COPY client/package*.json ./client/

@@ -1,5 +1,5 @@
 # ── Stage 1: Build ────────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -18,14 +18,13 @@ WORKDIR /app/server
 RUN npm ci
 
 #Copy source
-COPY server/src ./src/
-COPY server/tsconfig.json ./
+COPY server/ ./
 
 # Build
 RUN npm run build
 
 # ── Stage 2: Production ───────────────────────────────────────────────────────
-FROM node:20-alpine AS production
+FROM node:20-slim AS production
 
 WORKDIR /app
 
